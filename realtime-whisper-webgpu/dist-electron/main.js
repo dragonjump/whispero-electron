@@ -14846,14 +14846,16 @@ const __filename$1 = url.fileURLToPath(typeof document === "undefined" ? require
 const __dirname$1 = require$$0$1.dirname(__filename$1);
 const store = new Store();
 let mainWindow = null;
-let devToolsWindow = null;
 const userDataPath = require$$1$2.app.getPath("userData");
 require$$0$1.join(userDataPath, "GPUCache");
 require$$1$2.app.commandLine.appendSwitch("enable-unsafe-webgpu");
-require$$1$2.app.commandLine.appendSwitch("enable-features", "Vulkan,UseSkiaRenderer,WebGPU");
+require$$1$2.app.commandLine.appendSwitch("use-angle", "d3d11");
+require$$1$2.app.commandLine.appendSwitch("enable-dawn-features", "allow_unsafe_apis");
+require$$1$2.app.commandLine.appendSwitch("enable-features", "WebGPU");
 require$$1$2.app.commandLine.appendSwitch("ignore-gpu-blocklist");
-require$$1$2.app.commandLine.appendSwitch("enable-gpu-rasterization");
 require$$1$2.app.commandLine.appendSwitch("enable-zero-copy");
+require$$1$2.app.commandLine.appendSwitch("gpu-memory-buffer-pool-size", "1024");
+require$$1$2.app.commandLine.appendSwitch("shared-memory-size", "1024");
 function createWindow() {
   if (mainWindow) {
     return;
@@ -14876,38 +14878,16 @@ function createWindow() {
       nodeIntegration: true,
       contextIsolation: false,
       webSecurity: false,
-      webgl: true,
-      experimentalFeatures: true
-    },
-    show: false
-    // Don't show until ready
-  });
-  mainWindow.once("ready-to-show", () => {
-    mainWindow.show();
-  });
-  mainWindow.on("close", () => {
-    if (!mainWindow.isDestroyed()) {
-      const bounds = mainWindow.getBounds();
-      store.set("windowState", bounds);
+      experimentalFeatures: true,
+      enableWebGPU: true,
+      sharedArrayBuffers: true,
+      v8CacheOptions: "none",
+      backgroundThrottling: false
     }
   });
   if (process.env.NODE_ENV === "development") {
     mainWindow.loadURL("http://localhost:5173");
-    devToolsWindow = new require$$1$2.BrowserWindow({
-      width: 1e3,
-      height: 800,
-      show: false
-    });
-    mainWindow.webContents.setDevToolsWebContents(devToolsWindow.webContents);
     mainWindow.webContents.openDevTools({ mode: "detach" });
-    devToolsWindow.show();
-    mainWindow.on("closed", () => {
-      if (devToolsWindow && !devToolsWindow.isDestroyed()) {
-        devToolsWindow.close();
-      }
-      devToolsWindow = null;
-      mainWindow = null;
-    });
   } else {
     mainWindow.loadFile(require$$0$1.join(__dirname$1, "../dist/index.html"));
   }
@@ -14921,11 +14901,20 @@ function createWindow() {
       mainWindow.close();
     }
   });
+  mainWindow.on("close", () => {
+    if (!mainWindow.isDestroyed()) {
+      const bounds = mainWindow.getBounds();
+      store.set("windowState", bounds);
+    }
+  });
   require$$1$2.ipcMain.on("text-recognized", (event, text) => {
     console.log("Recognized Text:", text);
-    if (devToolsWindow && !devToolsWindow.isDestroyed()) {
-      devToolsWindow.webContents.send("text-log", text);
-    }
+  });
+  require$$1$2.ipcMain.on("webgpu-error", (event, error2) => {
+    console.error("WebGPU Error:", error2);
+  });
+  require$$1$2.ipcMain.on("audio-error", (event, error2) => {
+    console.error("Audio Error:", error2);
   });
 }
 require$$1$2.app.whenReady().then(createWindow);
