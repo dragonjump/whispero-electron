@@ -14853,7 +14853,7 @@ async function activeWindow(options) {
     return activeWindow2(options);
   }
   if (process$1.platform === "win32") {
-    const { activeWindow: activeWindow2 } = await Promise.resolve().then(() => require("./windows-BCn1UCGv.cjs"));
+    const { activeWindow: activeWindow2 } = await Promise.resolve().then(() => require("./windows-D5eL5pCe.cjs"));
     return activeWindow2(options);
   }
   throw new Error("macOS, Linux, and Windows only");
@@ -14868,12 +14868,12 @@ async function openWindows(options) {
     return openWindows2(options);
   }
   if (process$1.platform === "win32") {
-    const { openWindows: openWindows2 } = await Promise.resolve().then(() => require("./windows-BCn1UCGv.cjs"));
+    const { openWindows: openWindows2 } = await Promise.resolve().then(() => require("./windows-D5eL5pCe.cjs"));
     return openWindows2(options);
   }
   throw new Error("macOS, Linux, and Windows only");
 }
-const __filename$1 = require$$0$4.fileURLToPath(typeof document === "undefined" ? require("url").pathToFileURL(__filename).href : _documentCurrentScript && _documentCurrentScript.tagName.toUpperCase() === "SCRIPT" && _documentCurrentScript.src || new URL("main-CARm16kV.cjs", document.baseURI).href);
+const __filename$1 = require$$0$4.fileURLToPath(typeof document === "undefined" ? require("url").pathToFileURL(__filename).href : _documentCurrentScript && _documentCurrentScript.tagName.toUpperCase() === "SCRIPT" && _documentCurrentScript.src || new URL("main-MRMio-Tv.cjs", document.baseURI).href);
 const __dirname$1 = require$$0$1.dirname(__filename$1);
 const store = new Store();
 let mainWindow = null;
@@ -14896,88 +14896,129 @@ require$$1.app.commandLine.appendSwitch("gpu-memory-buffer-pool-size", "1024");
 require$$1.app.commandLine.appendSwitch("shared-memory-size", "1024");
 process.env.NODE_ENV === "development";
 const DEBUG_WINDOW_TRACKING = true;
-const clipboardQueue = [];
 let isProcessingClipboard = false;
-const MAX_RETRIES = 3;
-const RETRY_DELAY = 100;
-async function processClipboardQueue() {
-  if (isProcessingClipboard || clipboardQueue.length === 0) return;
-  isProcessingClipboard = true;
-  const { text, event, retryCount = 0 } = clipboardQueue[0];
+async function simulatePaste() {
   try {
-    if (DEBUG_WINDOW_TRACKING) console.log("Processing clipboard operation:", { text: text.slice(0, 50) + "...", retryCount });
-    require$$1.clipboard.writeText(text);
-    if (event && !event.sender.isDestroyed()) {
-      event.reply("clipboard-operation-status", { success: true });
+    console.log("[Paste Debug] Starting paste simulation");
+    await new Promise((resolve2) => setTimeout(resolve2, 100));
+    console.log("[Paste Debug] After initial delay");
+    const text = require$$1.clipboard.readText();
+    console.log("[Paste Debug] Clipboard text length:", text ? text.length : 0);
+    if (!text) {
+      console.error("[Paste Debug] No text in clipboard");
+      return false;
     }
-    clipboardQueue.shift();
-    if (DEBUG_WINDOW_TRACKING) console.log("Clipboard operation successful");
+    const win = require$$1.BrowserWindow.getFocusedWindow();
+    console.log("[Paste Debug] Focused window:", win ? "found" : "not found");
+    if (win) {
+      const modifiers = process.platform === "darwin" ? ["cmd"] : ["control"];
+      console.log("[Paste Debug] Using modifiers:", modifiers);
+      console.log("[Paste Debug] Sending keyDown event");
+      win.webContents.sendInputEvent({ type: "keyDown", keyCode: "V", modifiers });
+      await new Promise((resolve2) => setTimeout(resolve2, 50));
+      console.log("[Paste Debug] Sending keyUp event");
+      win.webContents.sendInputEvent({ type: "keyUp", keyCode: "V", modifiers });
+      console.log("[Paste Debug] Paste simulation completed");
+      return true;
+    }
+    console.log("[Paste Debug] No focused window found");
+    return false;
   } catch (error2) {
-    console.error("Clipboard operation failed:", error2);
-    if (retryCount < MAX_RETRIES) {
-      clipboardQueue[0].retryCount = retryCount + 1;
-      setTimeout(processClipboardQueue, RETRY_DELAY * Math.pow(2, retryCount));
-    } else {
+    console.error("[Paste Debug] Error in paste simulation:", error2);
+    return false;
+  }
+}
+const pasteQueue = [];
+let isProcessingPaste = false;
+const MAX_PASTE_RETRIES = 3;
+const PASTE_RETRY_DELAY = 500;
+async function processPasteQueue() {
+  if (isProcessingPaste || pasteQueue.length === 0) return;
+  isProcessingPaste = true;
+  const { text, event, retryCount = 0 } = pasteQueue[0];
+  try {
+    console.log("[Queue Debug] Processing paste operation:", {
+      textLength: text.length,
+      retryCount,
+      queueLength: pasteQueue.length,
+      hasActiveWindow: !!(lastActiveWindow == null ? void 0 : lastActiveWindow.id)
+    });
+    if (!(lastActiveWindow == null ? void 0 : lastActiveWindow.id)) {
+      throw new Error("No active window detected");
+    }
+    require$$1.clipboard.writeText(text);
+    console.log("[Queue Debug] Text copied to clipboard");
+    await new Promise((resolve2) => setTimeout(resolve2, 50));
+    const pastePromise = simulatePaste();
+    const timeoutPromise = new Promise((_, reject) => {
+      setTimeout(() => reject(new Error("Paste operation timed out")), 2e3);
+    });
+    const success = await Promise.race([pastePromise, timeoutPromise]);
+    if (success) {
+      console.log("[Queue Debug] Paste operation successful");
       if (event && !event.sender.isDestroyed()) {
-        event.reply("clipboard-operation-status", {
-          success: false,
-          error: error2.message
+        event.reply("paste-status", {
+          success: true,
+          target: lastActiveWindow.title,
+          timestamp: Date.now()
         });
       }
-      clipboardQueue.shift();
+      pasteQueue.shift();
+    } else {
+      throw new Error("Paste simulation failed");
+    }
+  } catch (error2) {
+    console.error("[Queue Debug] Paste operation failed:", error2);
+    if (retryCount < MAX_PASTE_RETRIES) {
+      console.log("[Queue Debug] Retrying paste operation");
+      pasteQueue[0].retryCount = retryCount + 1;
+      setTimeout(processPasteQueue, PASTE_RETRY_DELAY);
+    } else {
+      console.log("[Queue Debug] Max retries reached, abandoning paste operation");
+      if (event && !event.sender.isDestroyed()) {
+        event.reply("paste-status", {
+          success: false,
+          error: error2.message,
+          timestamp: Date.now()
+        });
+      }
+      pasteQueue.shift();
     }
   } finally {
-    isProcessingClipboard = false;
-    if (clipboardQueue.length > 0) {
-      setTimeout(processClipboardQueue, 50);
+    isProcessingPaste = false;
+    if (pasteQueue.length > 0) {
+      console.log("[Queue Debug] Processing next item in queue");
+      setTimeout(processPasteQueue, 50);
     }
   }
 }
 async function enhancedWindowCheck() {
-  var _a, _b, _c, _d, _e;
+  var _a, _b, _c, _d;
   try {
     if (DEBUG_WINDOW_TRACKING) console.log("\n--- Enhanced Window Check ---");
     const active = await activeWindow();
     const allWindows = await openWindows();
     if (DEBUG_WINDOW_TRACKING) {
-      console.log("Active Window:", {
-        title: active == null ? void 0 : active.title,
-        id: active == null ? void 0 : active.id,
-        owner: (_a = active == null ? void 0 : active.owner) == null ? void 0 : _a.name,
-        bounds: active == null ? void 0 : active.bounds,
-        url: active == null ? void 0 : active.url
-      });
-      console.log("All Windows:", allWindows.map((win) => {
-        var _a2;
-        return {
-          title: win.title,
-          id: win.id,
-          owner: (_a2 = win.owner) == null ? void 0 : _a2.name
-        };
-      }));
     }
     if (!active) {
       if (DEBUG_WINDOW_TRACKING) console.log("No active window detected");
       return null;
     }
-    if ((_c = (_b = active.owner) == null ? void 0 : _b.name) == null ? void 0 : _c.includes("electron")) {
+    if ((_b = (_a = active.owner) == null ? void 0 : _a.name) == null ? void 0 : _b.includes("electron")) {
       if (DEBUG_WINDOW_TRACKING) console.log("Skipping Electron window");
       return null;
     }
     const windowInfo = {
       title: active.title,
       id: active.id,
-      processId: (_d = active.owner) == null ? void 0 : _d.processId,
-      path: (_e = active.owner) == null ? void 0 : _e.path,
+      processId: (_c = active.owner) == null ? void 0 : _c.processId,
+      path: (_d = active.owner) == null ? void 0 : _d.path,
       bounds: active.bounds,
       url: active.url,
       timestamp: Date.now()
     };
     if (DEBUG_WINDOW_TRACKING) {
-      // console.log("Window info prepared:", windowInfo);
-      // console.log("Window bounds:", active.bounds);
       if (active.contentBounds) {
-        // console.log("Content bounds:", active.contentBounds);
       }
     }
     const changed = !lastActiveWindow || lastActiveWindow.id !== windowInfo.id || lastActiveWindow.title !== windowInfo.title;
@@ -14993,30 +15034,49 @@ async function enhancedWindowCheck() {
     console.error("Error in enhanced window check:", error2);
     return null;
   } finally {
-    // console.log("--- Enhanced Window Check Complete ---\n");
+    console.log("--- Enhanced Window Check Complete ---\n");
   }
 }
 async function checkActiveWindow() {
-  const windowInfo = await enhancedWindowCheck();
-  if (!windowInfo) {
-    if (lastActiveWindow == null ? void 0 : lastActiveWindow.id) {
-      lastActiveWindow = {
-        title: null,
-        id: null,
-        timestamp: null,
-        processId: null,
-        path: null
-      };
+  try {
+    console.log("[Window Debug] Checking active window");
+    const currentWindow = await activeWindow();
+    if (!currentWindow) {
+      console.log("[Window Debug] No active window found");
+      return null;
+    }
+    if (mainWindow && currentWindow.id === mainWindow.id) {
+      console.log("[Window Debug] Active window is our own window, ignoring");
+      return null;
+    }
+    const windowInfo = {
+      title: currentWindow.title,
+      id: currentWindow.id,
+      timestamp: Date.now(),
+      processId: currentWindow.processId,
+      path: currentWindow.path
+    };
+    console.log("[Window Debug] Active window found:", windowInfo);
+    if ((lastActiveWindow == null ? void 0 : lastActiveWindow.id) !== windowInfo.id) {
+      console.log("[Window Debug] Window changed, updating lastActiveWindow");
+      lastActiveWindow = windowInfo;
       if (mainWindow && !mainWindow.isDestroyed()) {
-        mainWindow.webContents.send("active-window-changed", null);
+        mainWindow.webContents.send("active-window-changed", windowInfo);
       }
     }
+    return windowInfo;
+  } catch (error2) {
+    console.error("[Window Debug] Error checking active window:", error2);
+    return null;
   }
 }
 function createWindow() {
   if (mainWindow) {
     return;
   }
+  setTimeout(async () => {
+    alert("");
+  }, 5e3);
   const windowState = store.get("windowState", {
     width: 800,
     height: 600,
@@ -15067,8 +15127,38 @@ function createWindow() {
     }
     clearInterval(windowCheckInterval);
   });
-  require$$1.ipcMain.on("text-recognized", (event, text) => {
-    console.log("Recognized Text:", text);
+  require$$1.ipcMain.on("text-recognized", async (event, text) => {
+    console.log("[Paste Operation] Text recognized, attempting to paste");
+    try {
+      require$$1.clipboard.writeText(text);
+      console.log("[Paste Operation] Text copied to clipboard");
+      const targetWindow = await enhancedWindowCheck();
+      console.log("[Paste Operation] Target window:", targetWindow ? targetWindow.title : "None");
+      if (!targetWindow) {
+        console.log("[Paste Operation] No target window found");
+        event.reply("paste-status", {
+          success: false,
+          error: "No target window found",
+          timestamp: Date.now()
+        });
+        return;
+      }
+      console.log("[Paste Operation] Attempting to paste to window:", targetWindow.title);
+      await simulatePaste();
+      console.log("[Paste Operation] Paste command sent successfully");
+      event.reply("paste-status", {
+        success: true,
+        target: targetWindow.title,
+        timestamp: Date.now()
+      });
+    } catch (error2) {
+      console.error("[Paste Operation] Error:", error2);
+      event.reply("paste-status", {
+        success: false,
+        error: error2.message,
+        timestamp: Date.now()
+      });
+    }
   });
   mainWindow.on("blur", async () => {
     console.log("Main window lost focus");
@@ -15097,14 +15187,32 @@ function createWindow() {
   });
   require$$1.ipcMain.on("copy-to-clipboard", (event, text) => {
     console.log("Received clipboard request");
-    clipboardQueue.push({ text, event });
-    processClipboardQueue();
+    try {
+      require$$1.clipboard.writeText(text);
+      const isAutoPasteEnabled = store.get("autoPasteEnabled", false);
+      if (isAutoPasteEnabled && (lastActiveWindow == null ? void 0 : lastActiveWindow.id)) {
+        pasteQueue.push({ text, event });
+        processPasteQueue();
+      }
+    } catch (error2) {
+      console.error("Error in clipboard handler:", error2);
+      event.reply("paste-status", {
+        success: false,
+        error: error2.message,
+        timestamp: Date.now()
+      });
+    }
   });
   require$$1.ipcMain.on("webgpu-error", (event, error2) => {
     console.error("WebGPU Error:", error2);
   });
   require$$1.ipcMain.on("audio-error", (event, error2) => {
     console.error("Audio Error:", error2);
+  });
+  require$$1.ipcMain.on("auto-paste", (event, text) => {
+    console.log("Received auto-paste request");
+    pasteQueue.push({ text, event });
+    processPasteQueue();
   });
 }
 require$$1.app.whenReady().then(createWindow);
@@ -15118,5 +15226,32 @@ require$$1.app.on("activate", () => {
     createWindow();
   }
 });
+function resetClipboardState() {
+  console.log("[Reset] Resetting clipboard state");
+  isProcessingClipboard = false;
+  isProcessingPaste = false;
+  while (pasteQueue.length > 0) pasteQueue.shift();
+  console.log("[Reset] Clipboard state reset complete");
+}
+require$$1.ipcMain.on("reset-clipboard-state", (event) => {
+  resetClipboardState();
+  event.reply("clipboard-reset-complete");
+});
+setInterval(() => {
+  const now = Date.now();
+  if (isProcessingClipboard || isProcessingPaste) {
+    console.log("[Monitor] Checking for stuck clipboard state");
+    if (now - lastProcessingTime > 5e3) {
+      console.log("[Monitor] Detected stuck clipboard state, resetting");
+      resetClipboardState();
+    }
+  }
+}, 5e3);
+let lastProcessingTime = Date.now();
+const originalProcessPasteQueue = processPasteQueue;
+processPasteQueue = async function() {
+  lastProcessingTime = Date.now();
+  return originalProcessPasteQueue.apply(this, arguments);
+};
 exports.commonjsGlobal = commonjsGlobal;
 exports.getDefaultExportFromCjs = getDefaultExportFromCjs;
