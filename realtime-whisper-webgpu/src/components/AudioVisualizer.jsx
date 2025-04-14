@@ -77,7 +77,7 @@ export function AudioVisualizer({ stream, isProcessing, isListening }) {
   }, [stream, isProcessing, isListening]);
 
   return (
-    <div className="w-full max-w-2xl relative">
+    <div  className="w-full max-w-2xl relative">
       <canvas
         ref={canvasRef}
         width={800}

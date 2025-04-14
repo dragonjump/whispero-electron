@@ -7,7 +7,7 @@ import { LanguageSelector } from "./components/LanguageSelector";
 import { WindowControls } from "./components/WindowControls";
 
 // Import icons
-import { FaMicrophone, FaMicrophoneSlash, FaPlay, FaStop } from 'react-icons/fa';
+import { FaMicrophone, FaMicrophoneSlash, FaPlay, FaStop, FaChartBar } from 'react-icons/fa';
 
 const WHISPER_SAMPLING_RATE = 16_000;
 const MAX_AUDIO_LENGTH = 30; // seconds
@@ -36,6 +36,7 @@ function App() {
   const [stream, setStream] = useState(null);
   const [isListening, setIsListening] = useState(true);
   const audioContextRef = useRef(null);
+  const [showVisualizer, setShowVisualizer] = useState(false);
 
   // Function to toggle listening state
   const toggleListening = () => {
@@ -211,28 +212,39 @@ function App() {
     }
   }, [status, recording, isProcessing, chunks, language]);
 
+  // Add toggle function to handle both icon and visualizer clicks
+  const toggleVisualizer = () => {
+    setShowVisualizer(!showVisualizer);
+  };
+
   return (
-    <div className="h-screen bg-transparent">
+    <div className="h-screen">
       {status === "loading" ? (
-        <div className="flex flex-col items-center justify-center h-full bg-transparent backdrop-blur-[2px] bg-opacity-30">
+        <div className="flex flex-col items-center justify-center h-full">
           <Progress items={progressItems} message={loadingMessage} />
         </div>
       ) : error ? (
-        <div className="flex items-center justify-center h-full bg-transparent backdrop-blur-[2px] bg-opacity-30">
+        <div className="flex items-center justify-center h-full">
           <p className="text-red-500 text-xs">{error}</p>
         </div>
       ) : (
-        <div className="flex flex-col h-screen mx-auto text-gray-800 dark:text-gray-200 bg-transparent backdrop-blur-[2px] bg-opacity-30">
+        <div className="flex flex-col h-screen mx-auto text-gray-800 dark:text-gray-200">
           <div className="flex-none p-2 flex justify-between items-center">
             <WindowControls />
-            <div className="w-32 scale-75 transform -translate-y-1">
+            <div className="w-32 scale-75 transform -translate-y-1 flex items-center gap-2">
               <LanguageSelector 
                 language={language}
                 setLanguage={setLanguage}
                 className="text-xs" 
               />
+              <button 
+                onClick={toggleVisualizer}
+                className="text-gray-400 hover:text-gray-200 transition-colors"
+              >
+                <FaChartBar className={`w-4 h-4 ${showVisualizer ? 'text-green-500' : 'text-gray-500'}`} />
+              </button>
             </div>
-            <div className="w-[72px]" /> {/* Spacer for symmetry */}
+            <div className="w-[72px]" />
           </div>
           
           <div className="flex-1 flex flex-col items-center justify-center p-4 space-y-4">
@@ -259,15 +271,19 @@ function App() {
                 )}
               </div>
             </div>
-            
-            <AudioVisualizer 
-              stream={stream} 
-              isProcessing={isProcessing} 
-              isListening={isListening}
-            />
+
+            {showVisualizer && (
+              <div className="transition-opacity hover:opacity-80">
+                <AudioVisualizer  
+                  stream={stream} 
+                  isProcessing={isProcessing} 
+                  isListening={isListening}
+                />
+              </div>
+            )}
             
             {text && (
-              <div className="w-full max-w-2xl bg-black/20 backdrop-blur-[2px] rounded-lg p-3 shadow-lg">
+              <div className="w-full max-w-2xl rounded-lg p-3 shadow-lg backdrop-blur-sm">
                 <p className="text-xs text-white">{text}</p>
               </div>
             )}
