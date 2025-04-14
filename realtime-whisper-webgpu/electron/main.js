@@ -1,4 +1,4 @@
-import { app, BrowserWindow, ipcMain } from 'electron';
+import { app, BrowserWindow, ipcMain, clipboard } from 'electron';
 import path from 'path';
 import { fileURLToPath } from 'url';
 import Store from 'electron-store';
@@ -173,6 +173,12 @@ function createWindow() {
     if (devToolsWindow && !devToolsWindow.isDestroyed()) {
       devToolsWindow.webContents.send('text-log', text);
     }
+  });
+
+  // Listen for clipboard copy events
+  ipcMain.on('copy-to-clipboard', (event, text) => {
+    clipboard.writeText(text);
+    console.log('Text copied to clipboard:', text.substring(0, 50) + (text.length > 50 ? '...' : ''));
   });
 
   // Listen for WebGPU errors

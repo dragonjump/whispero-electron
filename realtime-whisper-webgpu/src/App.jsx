@@ -28,6 +28,8 @@ function App() {
   const [text, setText] = useState("");
   const [tps, setTps] = useState(null);
   const [language, setLanguage] = useState("en");
+  const [lastCopyTime, setLastCopyTime] = useState(0);
+  const COPY_COOLDOWN = 300; // 300ms cooldown
 
   // Processing
   const [recording, setRecording] = useState(false);
@@ -37,6 +39,27 @@ function App() {
   const [isListening, setIsListening] = useState(true);
   const audioContextRef = useRef(null);
   const [showVisualizer, setShowVisualizer] = useState(false);
+
+  // Add clipboard copy function
+  const copyToClipboard = async (text) => {
+    const now = Date.now();
+    if (now - lastCopyTime < COPY_COOLDOWN) {
+      return; // Still in cooldown period
+    }
+    
+    try {
+      if (window.electron) {
+        // Use Electron's clipboard API
+        ipcRenderer.send('copy-to-clipboard', text);
+      } else {
+        // Fallback to browser clipboard API
+        await navigator.clipboard.writeText(text);
+      }
+      setLastCopyTime(now);
+    } catch (err) {
+      console.error('Failed to copy text:', err);
+    }
+  };
 
   // Function to toggle listening state
   const toggleListening = () => {
@@ -106,6 +129,7 @@ function App() {
         case "complete":
           setIsProcessing(false);
           setText(e.data.output);
+          copyToClipboard(e.data.output);
           if (window.electron) {
             ipcRenderer.send('text-recognized', e.data.output);
           }
@@ -283,7 +307,11 @@ function App() {
             )}
             
             {text && (
-              <div className="w-full max-w-2xl rounded-lg p-3 shadow-lg backdrop-blur-sm">
+              <div 
+                className="w-full max-w-2xl rounded-lg p-3 shadow-lg backdrop-blur-sm cursor-pointer hover:bg-white/5"
+                onClick={() => copyToClipboard(text)}
+                title="Click to copy"
+              >
                 <p className="text-xs text-white">{text}</p>
               </div>
             )}
