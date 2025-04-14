@@ -4,7 +4,7 @@ const path = require("node:path");
 const fs = require("node:fs");
 const node_url = require("node:url");
 const node_module = require("node:module");
-const main$1 = require("./main-hMC4ldIr.cjs");
+const main$1 = require("./main-C_nG01tK.cjs");
 const Url = require("url");
 const require$$0 = require("fs");
 const Path = require("path");
@@ -13242,9 +13242,9 @@ function requireNodePreGyp() {
 }
 var nodePreGypExports = requireNodePreGyp();
 const preGyp = /* @__PURE__ */ main$1.getDefaultExportFromCjs(nodePreGypExports);
-const __dirname$1 = path.dirname(node_url.fileURLToPath(typeof document === "undefined" ? require("url").pathToFileURL(__filename).href : _documentCurrentScript && _documentCurrentScript.tagName.toUpperCase() === "SCRIPT" && _documentCurrentScript.src || new URL("windows-Bt6Zlwe0.cjs", document.baseURI).href));
+const __dirname$1 = path.dirname(node_url.fileURLToPath(typeof document === "undefined" ? require("url").pathToFileURL(__filename).href : _documentCurrentScript && _documentCurrentScript.tagName.toUpperCase() === "SCRIPT" && _documentCurrentScript.src || new URL("windows-BCtJhjTu.cjs", document.baseURI).href));
 const getAddon = () => {
-  const require$1 = node_module.createRequire(typeof document === "undefined" ? require("url").pathToFileURL(__filename).href : _documentCurrentScript && _documentCurrentScript.tagName.toUpperCase() === "SCRIPT" && _documentCurrentScript.src || new URL("windows-Bt6Zlwe0.cjs", document.baseURI).href);
+  const require$1 = node_module.createRequire(typeof document === "undefined" ? require("url").pathToFileURL(__filename).href : _documentCurrentScript && _documentCurrentScript.tagName.toUpperCase() === "SCRIPT" && _documentCurrentScript.src || new URL("windows-BCtJhjTu.cjs", document.baseURI).href);
   const bindingPath = preGyp.find(path.resolve(path.join(__dirname$1, "../package.json")));
   return fs.existsSync(bindingPath) ? require$1(bindingPath) : {
     getActiveWindow() {

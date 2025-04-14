@@ -505,22 +505,23 @@ function createWindow() {
 
   // Restore window position and size
   const windowState = store.get('windowState', {
-    width: 800,
-    height: 600,
+    // width: 800,
+    // height: 600,
+    
+    width: 510,
+    height: 310,
     x: undefined,
     y: undefined
   });
 
-  // Create the browser window with WebGPU enabled
-  mainWindow = new BrowserWindow({
+  // Prepare browser window options
+  const browserWindowOptions = {
     width: windowState.width,
     height: windowState.height,
-    x: windowState.x,
-    y: windowState.y,
     frame: false,
     transparent: true,
     alwaysOnTop: true,
-    opacity: 0.88,
+    opacity: 0.895,
     backgroundColor: '#00000000',
     webPreferences: {
       nodeIntegration: true,
@@ -532,7 +533,18 @@ function createWindow() {
       v8CacheOptions: 'none',
       backgroundThrottling: false
     }
-  });
+  };
+
+  // Center window only if position is not saved
+  if (windowState.x === undefined || windowState.y === undefined) {
+    browserWindowOptions.center = true;
+  } else {
+    browserWindowOptions.x = windowState.x;
+    browserWindowOptions.y = windowState.y;
+  }
+
+  // Create the browser window with WebGPU enabled
+  mainWindow = new BrowserWindow(browserWindowOptions);
 
   // Load the app immediately
   if (process.env.NODE_ENV === 'development') {

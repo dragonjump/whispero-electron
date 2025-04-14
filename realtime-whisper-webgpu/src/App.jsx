@@ -84,8 +84,8 @@ function DebugPanel({ targetWindow, isAutoPasteEnabled, pasteStatus, toggleAutoP
           </button>
         </div>
         
-        {pasteStatus && (
-          <div>
+        {/* {pasteStatus && (
+          <div className="hidden">
             <strong>Last Paste:</strong>
             <div className={`mt-1 ${
               pasteStatus.success ? 'text-green-400' : 'text-red-400'
@@ -100,7 +100,7 @@ function DebugPanel({ targetWindow, isAutoPasteEnabled, pasteStatus, toggleAutoP
               </div>
             </div>
           </div>
-        )}
+        )} */}
         
         <div>
           <strong>Target Window:</strong>
@@ -513,6 +513,13 @@ function App() {
               >
                 <FaPaste className={`w-4 h-4 ${autoPasteEnabled ? 'text-green-500' : 'text-gray-500'}`} />
               </button>
+              <div className="relative">
+                {isListening ? (
+                  <FaMicrophone className="w-4 h-4 text-green-500 animate-pulse" title="Listening"/>
+                ) : (
+                  <FaMicrophoneSlash className="w-4 h-4 text-red-500" title="Stopped"/>
+                )}
+              </div>
             </div>
             <div className="w-[72px]" />
           </div>
@@ -524,16 +531,16 @@ function App() {
             </div>
           )}
 
-          {/* Paste Status */}
+          {/* Paste Status - Hidden */}
           {pasteStatus && (
             <div className={`absolute top-12 left-4 rounded px-2 py-1 text-xs ${
               pasteStatus.success ? 'bg-green-500/50' : 'bg-red-500/50'
-            } backdrop-blur-sm`}>
-              {pasteStatus.success ? 'Pasted to: ' + pasteStatus.target : 'Paste failed'}
+            } backdrop-blur-sm hidden`}>
+              {pasteStatus.success ? 'Pasted' : 'Paste failed'}
             </div>
           )}
 
-          <div className="flex-1 flex flex-col items-center justify-center p-4 space-y-4">
+          <div className="flex-1 flex flex-col items-center justify-center p-4 space-y-4 select-none">
             <div className="flex items-center space-x-4">
               <button
                 onClick={toggleListening}
@@ -544,18 +551,11 @@ function App() {
                 }`}
               >
                 {isListening ? (
-                  <FaStop className="w-5 h-5 text-white" />
+                  <FaMicrophoneSlash className="w-5 h-5 text-white animate-pulse" />
                 ) : (
-                  <FaPlay className="w-5 h-5 text-white" />
+                  <FaMicrophone className="w-5 h-5 text-white" />
                 )}
               </button>
-              <div className="relative">
-                {isListening ? (
-                  <FaMicrophone className="w-6 h-6 text-green-500 animate-pulse" />
-                ) : (
-                  <FaMicrophoneSlash className="w-6 h-6 text-red-500" />
-                )}
-              </div>
             </div>
 
             {showVisualizer && (
@@ -570,11 +570,11 @@ function App() {
             
             {text && (
               <div 
-                className="w-full max-w-2xl rounded-lg p-3 shadow-lg backdrop-blur-sm cursor-pointer hover:bg-white/5"
+                className="w-full max-w-2xl rounded-lg p-3 shadow-lg backdrop-blur-sm cursor-pointer hover:bg-white/5 overflow-y-auto max-h-40"
                 onClick={() => copyToClipboard(text)}
                 title="Click to copy"
               >
-                <p className="text-xs text-white">{text}</p>
+                <p className="text-xs text-white select-text">{text}</p>
               </div>
             )}
           </div>

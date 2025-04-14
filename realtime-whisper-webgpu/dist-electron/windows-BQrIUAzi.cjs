@@ -4,31 +4,28 @@ const path = require("node:path");
 const fs = require("node:fs");
 const node_url = require("node:url");
 const node_module = require("node:module");
-const main$1 = require("./main-DZloKsQs.cjs");
-const require$$0 = require("url");
-const require$$0$1 = require("fs");
-const require$$0$2 = require("path");
+const main$1 = require("./main-Dq3n_vcC.cjs");
+const Url = require("url");
+const require$$0 = require("fs");
+const Path = require("path");
 const require$$3 = require("mock-aws-s3");
 const require$$4 = require("os");
 const require$$5$1 = require("aws-sdk");
 const require$$6 = require("nock");
-const require$$0$3 = require("stream");
-const require$$0$5 = require("util");
-const require$$0$4 = require("events");
-const require$$0$6 = require("buffer");
-const require$$5$2 = require("assert");
-const require$$0$7 = require("child_process");
+const Stream = require("stream");
+const require$$0$2 = require("util");
+const require$$0$1 = require("events");
+const require$$0$3 = require("buffer");
+const require$$0$4 = require("assert");
+const require$$0$5 = require("child_process");
 var _documentCurrentScript = typeof document !== "undefined" ? document.currentScript : null;
-function commonjsRequire(path2) {
-  throw new Error('Could not dynamically require "' + path2 + '". Please configure the dynamicRequireTargets or/and ignoreDynamicRequires option of @rollup/plugin-commonjs appropriately for this require call to work.');
-}
 var nodePreGyp = { exports: {} };
 var s3_setup = { exports: {} };
 (function(module2, exports2) {
   module2.exports = exports2;
-  const url = require$$0;
-  const fs2 = require$$0$1;
-  const path2 = require$$0$2;
+  const url = Url;
+  const fs2 = require$$0;
+  const path2 = Path;
   module2.exports.detect = function(opts, config) {
     const to = opts.hosted_path;
     const uri = url.parse(to);
@@ -204,7 +201,7 @@ var abbrevExports = abbrev.exports;
     console.error.apply(console, arguments);
   } : function() {
   };
-  var url = require$$0, path2 = require$$0$2, Stream = require$$0$3.Stream, abbrev2 = abbrevExports, os2 = require$$4;
+  var url = Url, path2 = Path, Stream$1 = Stream.Stream, abbrev2 = abbrevExports, os2 = require$$4;
   module2.exports = exports2 = nopt2;
   exports2.clean = clean;
   exports2.typeDefs = {
@@ -213,7 +210,7 @@ var abbrevExports = abbrev.exports;
     url: { type: url, validate: validateUrl },
     Number: { type: Number, validate: validateNumber },
     path: { type: path2, validate: validatePath },
-    Stream: { type: Stream, validate: validateStream },
+    Stream: { type: Stream$1, validate: validateStream },
     Date: { type: Date, validate: validateDate }
   };
   function nopt2(types2, shorthands, args, slice) {
@@ -336,7 +333,7 @@ var abbrevExports = abbrev.exports;
     data[k] = val.href;
   }
   function validateStream(data, k, val) {
-    if (!(val instanceof Stream)) return false;
+    if (!(val instanceof Stream$1)) return false;
     data[k] = val;
   }
   function validate2(data, k, val, type, typeDefs) {
@@ -518,8 +515,8 @@ var log = { exports: {} };
 var lib = {};
 var trackerGroup = { exports: {} };
 var trackerBase = { exports: {} };
-var EventEmitter = require$$0$4.EventEmitter;
-var util$4 = require$$0$5;
+var EventEmitter = require$$0$1.EventEmitter;
+var util$4 = require$$0$2;
 var trackerId = 0;
 var TrackerBase$2 = trackerBase.exports = function(name2) {
   EventEmitter.call(this);
@@ -529,7 +526,7 @@ var TrackerBase$2 = trackerBase.exports = function(name2) {
 util$4.inherits(TrackerBase$2, EventEmitter);
 var trackerBaseExports = trackerBase.exports;
 var tracker = { exports: {} };
-var util$3 = require$$0$5;
+var util$3 = require$$0$2;
 var TrackerBase$1 = trackerBaseExports;
 var Tracker$2 = tracker.exports = function(name2, todo) {
   TrackerBase$1.call(this, name2);
@@ -563,7 +560,7 @@ var hasRequiredStream;
 function requireStream() {
   if (hasRequiredStream) return stream$1;
   hasRequiredStream = 1;
-  stream$1 = require$$0$3;
+  stream$1 = Stream;
   return stream$1;
 }
 var buffer_list;
@@ -634,8 +631,8 @@ function requireBuffer_list() {
     }
     return (hint === "string" ? String : Number)(input);
   }
-  var _require = require$$0$6, Buffer = _require.Buffer;
-  var _require2 = require$$0$5, inspect = _require2.inspect;
+  var _require = require$$0$3, Buffer = _require.Buffer;
+  var _require2 = require$$0$2, inspect = _require2.inspect;
   var custom = inspect && inspect.custom || "inspect";
   function copyBuffer(src, target, offset) {
     Buffer.prototype.copy.call(src, target, offset);
@@ -1071,7 +1068,7 @@ var hasRequiredNode;
 function requireNode() {
   if (hasRequiredNode) return node;
   hasRequiredNode = 1;
-  node = require$$0$5.deprecate;
+  node = require$$0$2.deprecate;
   return node;
 }
 var _stream_writable;
@@ -1093,8 +1090,8 @@ function require_stream_writable() {
   var internalUtil = {
     deprecate: requireNode()
   };
-  var Stream = requireStream();
-  var Buffer = require$$0$6.Buffer;
+  var Stream2 = requireStream();
+  var Buffer = require$$0$3.Buffer;
   var OurUint8Array = (typeof main$1.commonjsGlobal !== "undefined" ? main$1.commonjsGlobal : typeof window !== "undefined" ? window : typeof self !== "undefined" ? self : {}).Uint8Array || function() {
   };
   function _uint8ArrayToBuffer(chunk) {
@@ -1107,7 +1104,7 @@ function require_stream_writable() {
   var _require = requireState(), getHighWaterMark = _require.getHighWaterMark;
   var _require$codes = requireErrors().codes, ERR_INVALID_ARG_TYPE = _require$codes.ERR_INVALID_ARG_TYPE, ERR_METHOD_NOT_IMPLEMENTED = _require$codes.ERR_METHOD_NOT_IMPLEMENTED, ERR_MULTIPLE_CALLBACK = _require$codes.ERR_MULTIPLE_CALLBACK, ERR_STREAM_CANNOT_PIPE = _require$codes.ERR_STREAM_CANNOT_PIPE, ERR_STREAM_DESTROYED = _require$codes.ERR_STREAM_DESTROYED, ERR_STREAM_NULL_VALUES = _require$codes.ERR_STREAM_NULL_VALUES, ERR_STREAM_WRITE_AFTER_END = _require$codes.ERR_STREAM_WRITE_AFTER_END, ERR_UNKNOWN_ENCODING = _require$codes.ERR_UNKNOWN_ENCODING;
   var errorOrDestroy = destroyImpl.errorOrDestroy;
-  requireInherits()(Writable, Stream);
+  requireInherits()(Writable, Stream2);
   function nop() {
   }
   function WritableState(options, stream2, isDuplex) {
@@ -1192,7 +1189,7 @@ function require_stream_writable() {
       if (typeof options.destroy === "function") this._destroy = options.destroy;
       if (typeof options.final === "function") this._final = options.final;
     }
-    Stream.call(this);
+    Stream2.call(this);
   }
   Writable.prototype.pipe = function() {
     errorOrDestroy(this, new ERR_STREAM_CANNOT_PIPE());
@@ -1634,7 +1631,7 @@ function requireSafeBuffer() {
   if (hasRequiredSafeBuffer) return safeBuffer.exports;
   hasRequiredSafeBuffer = 1;
   (function(module2, exports2) {
-    var buffer2 = require$$0$6;
+    var buffer2 = require$$0$3;
     var Buffer = buffer2.Buffer;
     function copyProps(src, dst) {
       for (var key in src) {
@@ -2327,12 +2324,12 @@ function require_stream_readable() {
   _stream_readable = Readable;
   var Duplex;
   Readable.ReadableState = ReadableState;
-  require$$0$4.EventEmitter;
+  require$$0$1.EventEmitter;
   var EElistenerCount = function EElistenerCount2(emitter, type) {
     return emitter.listeners(type).length;
   };
-  var Stream = requireStream();
-  var Buffer = require$$0$6.Buffer;
+  var Stream2 = requireStream();
+  var Buffer = require$$0$3.Buffer;
   var OurUint8Array = (typeof main$1.commonjsGlobal !== "undefined" ? main$1.commonjsGlobal : typeof window !== "undefined" ? window : typeof self !== "undefined" ? self : {}).Uint8Array || function() {
   };
   function _uint8ArrayToBuffer(chunk) {
@@ -2341,7 +2338,7 @@ function require_stream_readable() {
   function _isUint8Array(obj) {
     return Buffer.isBuffer(obj) || obj instanceof OurUint8Array;
   }
-  var debugUtil = require$$0$5;
+  var debugUtil = require$$0$2;
   var debug;
   if (debugUtil && debugUtil.debuglog) {
     debug = debugUtil.debuglog("stream");
@@ -2356,7 +2353,7 @@ function require_stream_readable() {
   var StringDecoder;
   var createReadableStreamAsyncIterator;
   var from;
-  requireInherits()(Readable, Stream);
+  requireInherits()(Readable, Stream2);
   var errorOrDestroy = destroyImpl.errorOrDestroy;
   var kProxyEvents = ["error", "close", "destroy", "pause", "resume"];
   function prependListener(emitter, event, fn) {
@@ -2410,7 +2407,7 @@ function require_stream_readable() {
       if (typeof options.read === "function") this._read = options.read;
       if (typeof options.destroy === "function") this._destroy = options.destroy;
     }
-    Stream.call(this);
+    Stream2.call(this);
   }
   Object.defineProperty(Readable.prototype, "destroyed", {
     // making it explicit this property is not enumerable
@@ -2812,7 +2809,7 @@ function require_stream_readable() {
     return this;
   };
   Readable.prototype.on = function(ev, fn) {
-    var res = Stream.prototype.on.call(this, ev, fn);
+    var res = Stream2.prototype.on.call(this, ev, fn);
     var state2 = this._readableState;
     if (ev === "data") {
       state2.readableListening = this.listenerCount("readable") > 0;
@@ -2834,14 +2831,14 @@ function require_stream_readable() {
   };
   Readable.prototype.addListener = Readable.prototype.on;
   Readable.prototype.removeListener = function(ev, fn) {
-    var res = Stream.prototype.removeListener.call(this, ev, fn);
+    var res = Stream2.prototype.removeListener.call(this, ev, fn);
     if (ev === "readable") {
       process.nextTick(updateReadableListening, this);
     }
     return res;
   };
   Readable.prototype.removeAllListeners = function(ev) {
-    var res = Stream.prototype.removeAllListeners.apply(this, arguments);
+    var res = Stream2.prototype.removeAllListeners.apply(this, arguments);
     if (ev === "readable" || ev === void 0) {
       process.nextTick(updateReadableListening, this);
     }
@@ -3245,14 +3242,14 @@ function requirePipeline() {
   return pipeline_1;
 }
 (function(module2, exports2) {
-  var Stream = require$$0$3;
-  if (process.env.READABLE_STREAM === "disable" && Stream) {
-    module2.exports = Stream.Readable;
-    Object.assign(module2.exports, Stream);
-    module2.exports.Stream = Stream;
+  var Stream$1 = Stream;
+  if (process.env.READABLE_STREAM === "disable" && Stream$1) {
+    module2.exports = Stream$1.Readable;
+    Object.assign(module2.exports, Stream$1);
+    module2.exports.Stream = Stream$1;
   } else {
     exports2 = module2.exports = require_stream_readable();
-    exports2.Stream = Stream || exports2;
+    exports2.Stream = Stream$1 || exports2;
     exports2.Readable = exports2;
     exports2.Writable = require_stream_writable();
     exports2.Duplex = require_stream_duplex();
@@ -3317,7 +3314,7 @@ Delegator.prototype.fluent = function(name2) {
   };
   return this;
 };
-var util$2 = require$$0$5;
+var util$2 = require$$0$2;
 var stream = readableExports;
 var delegate = delegates;
 var Tracker$1 = trackerExports;
@@ -3345,7 +3342,7 @@ TrackerStream$1.prototype._flush = function(cb) {
 };
 delegate(TrackerStream$1.prototype, "tracker").method("completed").method("addWork").method("finish");
 var trackerStreamExports = trackerStream.exports;
-var util$1 = require$$0$5;
+var util$1 = require$$0$2;
 var TrackerBase = trackerBaseExports;
 var Tracker = trackerExports;
 var TrackerStream = trackerStreamExports;
@@ -3786,7 +3783,7 @@ function wideTruncate$2(str, target) {
   return truncated;
 }
 var error$1 = {};
-var util = require$$0$5;
+var util = require$$0$2;
 var User = error$1.User = function User2(msg) {
   var err = new Error(msg);
   Error.captureStackTrace(err, User2);
@@ -4232,10 +4229,10 @@ if (!processOk(process$3)) {
     };
   };
 } else {
-  var assert = require$$5$2;
+  var assert = require$$0$4;
   var signals = requireSignals();
   var isWin = /^win/i.test(process$3.platform);
-  var EE = require$$0$4;
+  var EE = require$$0$1;
   if (typeof EE !== "function") {
     EE = EE.EventEmitter;
   }
@@ -4846,9 +4843,9 @@ var setBlocking = function(blocking) {
 (function(module2, exports2) {
   var Progress = lib;
   var Gauge2 = gauge;
-  var EE = require$$0$4.EventEmitter;
+  var EE = require$$0$1.EventEmitter;
   var log2 = module2.exports = new EE();
-  var util2 = require$$0$5;
+  var util2 = require$$0$2;
   var setBlocking$1 = setBlocking;
   var consoleControl2 = consoleControlStrings;
   setBlocking$1(true);
@@ -5178,9 +5175,9 @@ var hasRequiredOld;
 function requireOld() {
   if (hasRequiredOld) return old;
   hasRequiredOld = 1;
-  var pathModule = require$$0$2;
+  var pathModule = Path;
   var isWindows = process.platform === "win32";
-  var fs2 = require$$0$1;
+  var fs2 = require$$0;
   var DEBUG = process.env.NODE_DEBUG && /fs/.test(process.env.NODE_DEBUG);
   function rethrow() {
     var callback;
@@ -5383,7 +5380,7 @@ function requireFs_realpath() {
   realpath.realpathSync = realpathSync;
   realpath.monkeypatch = monkeypatch;
   realpath.unmonkeypatch = unmonkeypatch;
-  var fs2 = require$$0$1;
+  var fs2 = require$$0;
   var origRealpath = fs2.realpath;
   var origRealpathSync = fs2.realpathSync;
   var version2 = process.version;
@@ -6259,8 +6256,8 @@ function requireCommon() {
   function ownProp(obj, field) {
     return Object.prototype.hasOwnProperty.call(obj, field);
   }
-  var fs2 = require$$0$1;
-  var path2 = require$$0$2;
+  var fs2 = require$$0;
+  var path2 = Path;
   var minimatch = requireMinimatch();
   var isAbsolute = requirePathIsAbsolute();
   var Minimatch = minimatch.Minimatch;
@@ -6450,8 +6447,8 @@ function requireSync() {
   var minimatch = requireMinimatch();
   minimatch.Minimatch;
   requireGlob().Glob;
-  var path2 = require$$0$2;
-  var assert = require$$5$2;
+  var path2 = Path;
+  var assert = require$$0$4;
   var isAbsolute = requirePathIsAbsolute();
   var common2 = requireCommon();
   var setopts = common2.setopts;
@@ -6921,9 +6918,9 @@ function requireGlob() {
   var minimatch = requireMinimatch();
   minimatch.Minimatch;
   var inherits2 = requireInherits();
-  var EE = require$$0$4.EventEmitter;
-  var path2 = require$$0$2;
-  var assert = require$$5$2;
+  var EE = require$$0$1.EventEmitter;
+  var path2 = Path;
+  var assert = require$$0$4;
   var isAbsolute = requirePathIsAbsolute();
   var globSync = requireSync();
   var common2 = requireCommon();
@@ -7467,9 +7464,9 @@ var hasRequiredRimraf;
 function requireRimraf() {
   if (hasRequiredRimraf) return rimraf_1;
   hasRequiredRimraf = 1;
-  const assert = require$$5$2;
-  const path2 = require$$0$2;
-  const fs2 = require$$0$1;
+  const assert = require$$0$4;
+  const path2 = Path;
+  const fs2 = require$$0;
   let glob = void 0;
   try {
     glob = requireGlob();
@@ -7749,7 +7746,7 @@ function requireNapi() {
   if (hasRequiredNapi) return napi.exports;
   hasRequiredNapi = 1;
   (function(module2, exports2) {
-    const fs2 = require$$0$1;
+    const fs2 = require$$0;
     module2.exports = exports2;
     const versionArray = process.version.substr(1).replace(/-.*$/, "").split(".").map((item) => {
       return +item;
@@ -9849,7 +9846,7 @@ var hasRequiredFilesystem;
 function requireFilesystem() {
   if (hasRequiredFilesystem) return filesystem;
   hasRequiredFilesystem = 1;
-  const fs2 = require$$0$1;
+  const fs2 = require$$0;
   const LDD_PATH = "/usr/bin/ldd";
   const readFileSync = (path2) => fs2.readFileSync(path2, "utf-8");
   const readFile = (path2) => new Promise((resolve, reject) => {
@@ -9873,7 +9870,7 @@ var hasRequiredDetectLibc;
 function requireDetectLibc() {
   if (hasRequiredDetectLibc) return detectLibc;
   hasRequiredDetectLibc = 1;
-  const childProcess = require$$0$7;
+  const childProcess = require$$0$5;
   const { isLinux, getReport } = requireProcess();
   const { LDD_PATH, readFile, readFileSync } = requireFilesystem();
   let cachedFamilyFilesystem;
@@ -12686,14 +12683,14 @@ function requireVersioning() {
   hasRequiredVersioning = 1;
   (function(module2, exports2) {
     module2.exports = exports2;
-    const path2 = require$$0$2;
+    const path2 = Path;
     const semver2 = requireSemver();
-    const url = require$$0;
+    const url = Url;
     const detect_libc = requireDetectLibc();
     const napi2 = requireNapi();
     let abi_crosswalk;
     if (process.env.NODE_PRE_GYP_ABI_CROSSWALK) {
-      abi_crosswalk = commonjsRequire(process.env.NODE_PRE_GYP_ABI_CROSSWALK);
+      abi_crosswalk = main$1.commonjsRequire(process.env.NODE_PRE_GYP_ABI_CROSSWALK);
     } else {
       abi_crosswalk = require$$5;
     }
@@ -12954,8 +12951,8 @@ function requirePreBinding() {
     const npg = requireNodePreGyp();
     const versioning2 = requireVersioning();
     const napi2 = requireNapi();
-    const existsSync = require$$0$1.existsSync || require$$0$2.existsSync;
-    const path2 = require$$0$2;
+    const existsSync = require$$0.existsSync || Path.existsSync;
+    const path2 = Path;
     module2.exports = exports2;
     exports2.usage = "Finds the require path for the node-pre-gyp installed module";
     exports2.validate = function(package_json, opts) {
@@ -13065,14 +13062,14 @@ function requireNodePreGyp() {
     exports2.mockS3Http = s3_setupExports.get_mockS3Http();
     exports2.mockS3Http("on");
     const mocking = exports2.mockS3Http("get");
-    const fs2 = require$$0$1;
-    const path2 = require$$0$2;
+    const fs2 = require$$0;
+    const path2 = Path;
     const nopt2 = noptExports;
     const log2 = logExports;
     log2.disableProgress();
     const napi2 = requireNapi();
-    const EE = require$$0$4.EventEmitter;
-    const inherits2 = require$$0$5.inherits;
+    const EE = require$$0$1.EventEmitter;
+    const inherits2 = require$$0$2.inherits;
     const cli_commands = [
       "clean",
       "install",
@@ -13106,7 +13103,7 @@ function requireNodePreGyp() {
       cli_commands.forEach((command) => {
         self2.commands[command] = function(argvx, callback) {
           log2.verbose("command", command, argvx);
-          return commonjsRequire("./" + command)(self2, argvx, callback);
+          return main$1.commonjsRequire("./" + command)(self2, argvx, callback);
         };
       });
       this.parseArgv(argv);
@@ -13226,7 +13223,7 @@ function requireNodePreGyp() {
         "",
         "  where <command> is one of:",
         cli_commands.map((c) => {
-          return "    - " + c + " - " + commonjsRequire("./" + c).usage;
+          return "    - " + c + " - " + main$1.commonjsRequire("./" + c).usage;
         }).join("\n"),
         "",
         "node-pre-gyp@" + this.version + "  " + path2.resolve(__dirname, ".."),
@@ -13245,9 +13242,9 @@ function requireNodePreGyp() {
 }
 var nodePreGypExports = requireNodePreGyp();
 const preGyp = /* @__PURE__ */ main$1.getDefaultExportFromCjs(nodePreGypExports);
-const __dirname$1 = path.dirname(node_url.fileURLToPath(typeof document === "undefined" ? require("url").pathToFileURL(__filename).href : _documentCurrentScript && _documentCurrentScript.tagName.toUpperCase() === "SCRIPT" && _documentCurrentScript.src || new URL("windows-BM6zMSxJ.cjs", document.baseURI).href));
+const __dirname$1 = path.dirname(node_url.fileURLToPath(typeof document === "undefined" ? require("url").pathToFileURL(__filename).href : _documentCurrentScript && _documentCurrentScript.tagName.toUpperCase() === "SCRIPT" && _documentCurrentScript.src || new URL("windows-BQrIUAzi.cjs", document.baseURI).href));
 const getAddon = () => {
-  const require$1 = node_module.createRequire(typeof document === "undefined" ? require("url").pathToFileURL(__filename).href : _documentCurrentScript && _documentCurrentScript.tagName.toUpperCase() === "SCRIPT" && _documentCurrentScript.src || new URL("windows-BM6zMSxJ.cjs", document.baseURI).href);
+  const require$1 = node_module.createRequire(typeof document === "undefined" ? require("url").pathToFileURL(__filename).href : _documentCurrentScript && _documentCurrentScript.tagName.toUpperCase() === "SCRIPT" && _documentCurrentScript.src || new URL("windows-BQrIUAzi.cjs", document.baseURI).href);
   const bindingPath = preGyp.find(path.resolve(path.join(__dirname$1, "../package.json")));
   return fs.existsSync(bindingPath) ? require$1(bindingPath) : {
     getActiveWindow() {

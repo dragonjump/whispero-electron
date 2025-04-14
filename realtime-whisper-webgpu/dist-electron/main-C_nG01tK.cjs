@@ -14891,7 +14891,7 @@ async function activeWindow(options) {
     return activeWindow2(options);
   }
   if (process$1.platform === "win32") {
-    const { activeWindow: activeWindow2 } = await Promise.resolve().then(() => require("./windows-Cx11E880.cjs"));
+    const { activeWindow: activeWindow2 } = await Promise.resolve().then(() => require("./windows-BCtJhjTu.cjs"));
     return activeWindow2(options);
   }
   throw new Error("macOS, Linux, and Windows only");
@@ -14906,7 +14906,7 @@ async function openWindows(options) {
     return openWindows2(options);
   }
   if (process$1.platform === "win32") {
-    const { openWindows: openWindows2 } = await Promise.resolve().then(() => require("./windows-Cx11E880.cjs"));
+    const { openWindows: openWindows2 } = await Promise.resolve().then(() => require("./windows-BCtJhjTu.cjs"));
     return openWindows2(options);
   }
   throw new Error("macOS, Linux, and Windows only");
@@ -135328,7 +135328,7 @@ function requireDist() {
   return dist$4;
 }
 var distExports = requireDist();
-const __filename$1 = Url.fileURLToPath(typeof document === "undefined" ? require("url").pathToFileURL(__filename).href : _documentCurrentScript && _documentCurrentScript.tagName.toUpperCase() === "SCRIPT" && _documentCurrentScript.src || new URL("main-vnWuQTCm.cjs", document.baseURI).href);
+const __filename$1 = Url.fileURLToPath(typeof document === "undefined" ? require("url").pathToFileURL(__filename).href : _documentCurrentScript && _documentCurrentScript.tagName.toUpperCase() === "SCRIPT" && _documentCurrentScript.src || new URL("main-C_nG01tK.cjs", document.baseURI).href);
 const __dirname$1 = Path.dirname(__filename$1);
 const store = new Store();
 let mainWindow = null;
@@ -135550,8 +135550,10 @@ function createWindow() {
     return;
   }
   const windowState = store.get("windowState", {
-    width: 800,
-    height: 600,
+    // width: 800,
+    // height: 600,
+    width: 550,
+    height: 350,
     x: void 0,
     y: void 0
   });

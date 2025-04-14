@@ -14891,7 +14891,7 @@ async function activeWindow(options) {
     return activeWindow2(options);
   }
   if (process$1.platform === "win32") {
-    const { activeWindow: activeWindow2 } = await Promise.resolve().then(() => require("./windows-CvgqzqZz.cjs"));
+    const { activeWindow: activeWindow2 } = await Promise.resolve().then(() => require("./windows-HNK7p1fG.cjs"));
     return activeWindow2(options);
   }
   throw new Error("macOS, Linux, and Windows only");
@@ -14906,7 +14906,7 @@ async function openWindows(options) {
     return openWindows2(options);
   }
   if (process$1.platform === "win32") {
-    const { openWindows: openWindows2 } = await Promise.resolve().then(() => require("./windows-CvgqzqZz.cjs"));
+    const { openWindows: openWindows2 } = await Promise.resolve().then(() => require("./windows-HNK7p1fG.cjs"));
     return openWindows2(options);
   }
   throw new Error("macOS, Linux, and Windows only");
@@ -135328,7 +135328,7 @@ function requireDist() {
   return dist$4;
 }
 var distExports = requireDist();
-const __filename$1 = Url.fileURLToPath(typeof document === "undefined" ? require("url").pathToFileURL(__filename).href : _documentCurrentScript && _documentCurrentScript.tagName.toUpperCase() === "SCRIPT" && _documentCurrentScript.src || new URL("main-BisGTDof.cjs", document.baseURI).href);
+const __filename$1 = Url.fileURLToPath(typeof document === "undefined" ? require("url").pathToFileURL(__filename).href : _documentCurrentScript && _documentCurrentScript.tagName.toUpperCase() === "SCRIPT" && _documentCurrentScript.src || new URL("main-BvTrhlMq.cjs", document.baseURI).href);
 const __dirname$1 = Path.dirname(__filename$1);
 const store = new Store();
 let mainWindow = null;
@@ -135366,6 +135366,12 @@ async function simulatePaste() {
     console.log("[Paste Debug] After initial delay");
     try {
       console.log("[Paste Debug] Using native keyboard simulation");
+      console.log("[Paste Debug] Selecting all text (Ctrl+A)");
+      await distExports.keyboard.pressKey(distExports.Key.LeftControl);
+      await distExports.keyboard.type("a");
+      await distExports.keyboard.releaseKey(distExports.Key.LeftControl);
+      await new Promise((resolve2) => setTimeout(resolve2, 50));
+      console.log("[Paste Debug] Pasting text (Ctrl+V)");
       await distExports.keyboard.pressKey(distExports.Key.LeftControl);
       await distExports.keyboard.type("v");
       await distExports.keyboard.releaseKey(distExports.Key.LeftControl);
@@ -135377,6 +135383,10 @@ async function simulatePaste() {
       const win = require$$1$1.BrowserWindow.getFocusedWindow();
       if (win && !win.isDestroyed()) {
         const modifiers = process.platform === "darwin" ? ["cmd"] : ["control"];
+        win.webContents.sendInputEvent({ type: "keyDown", keyCode: "A", modifiers });
+        await new Promise((resolve2) => setTimeout(resolve2, 50));
+        win.webContents.sendInputEvent({ type: "keyUp", keyCode: "A", modifiers });
+        await new Promise((resolve2) => setTimeout(resolve2, 50));
         win.webContents.sendInputEvent({ type: "keyDown", keyCode: "V", modifiers });
         await new Promise((resolve2) => setTimeout(resolve2, 50));
         win.webContents.sendInputEvent({ type: "keyUp", keyCode: "V", modifiers });
@@ -135395,6 +135405,7 @@ const pasteQueue = [];
 let isProcessingPaste = false;
 const MAX_PASTE_RETRIES = 3;
 const PASTE_RETRY_DELAY = 500;
+let lastPastedText = "";
 async function processPasteQueue() {
   if (isProcessingPaste || pasteQueue.length === 0) return;
   isProcessingPaste = true;
@@ -135539,20 +135550,20 @@ function createWindow() {
     return;
   }
   const windowState = store.get("windowState", {
-    width: 800,
-    height: 600,
+    // width: 800,
+    // height: 600,
+    width: 510,
+    height: 310,
     x: void 0,
     y: void 0
   });
-  mainWindow = new require$$1$1.BrowserWindow({
+  const browserWindowOptions = {
     width: windowState.width,
     height: windowState.height,
-    x: windowState.x,
-    y: windowState.y,
     frame: false,
     transparent: true,
     alwaysOnTop: true,
-    opacity: 0.88,
+    opacity: 0.895,
     backgroundColor: "#00000000",
     webPreferences: {
       nodeIntegration: true,
@@ -135564,7 +135575,14 @@ function createWindow() {
       v8CacheOptions: "none",
       backgroundThrottling: false
     }
-  });
+  };
+  if (windowState.x === void 0 || windowState.y === void 0) {
+    browserWindowOptions.center = true;
+  } else {
+    browserWindowOptions.x = windowState.x;
+    browserWindowOptions.y = windowState.y;
+  }
+  mainWindow = new require$$1$1.BrowserWindow(browserWindowOptions);
   if (process.env.NODE_ENV === "development") {
     mainWindow.loadURL("http://localhost:5173");
     mainWindow.webContents.openDevTools({ mode: "detach" });
@@ -135589,12 +135607,27 @@ function createWindow() {
     clearInterval(windowCheckInterval);
   });
   require$$1$1.ipcMain.on("text-recognized", async (event, text) => {
-    console.log("[Paste Operation] Text recognized, attempting to paste", text);
+    console.log("[Paste Operation] Text recognized, checking if changed");
     try {
-      require$$1$1.clipboard.writeText(text);
-      console.log("[Paste Operation] Text copied to clipboard");
+      const textToWrite = Array.isArray(text) ? text.join(" ") : text;
+      if (textToWrite === lastPastedText) {
+        console.log("[Paste Operation] Text unchanged, skipping paste");
+        event.reply("paste-status", {
+          success: true,
+          skipped: true,
+          reason: "Text unchanged",
+          timestamp: Date.now()
+        });
+        return;
+      }
+      require$$1$1.clipboard.writeText(textToWrite);
+      console.log("[Paste Operation] Text copied to clipboard:>", textToWrite);
       const targetWindow = await enhancedWindowCheck();
-      console.log("[Paste Operation] Target window:", targetWindow ? targetWindow.title : "None");
+      console.log("[Paste Operation] Target window:", targetWindow ? {
+        title: targetWindow.title,
+        id: targetWindow.id,
+        processId: targetWindow.processId
+      } : "None");
       if (!targetWindow) {
         console.log("[Paste Operation] No target window found");
         event.reply("paste-status", {
@@ -135604,11 +135637,14 @@ function createWindow() {
         });
         return;
       }
-      console.log("[Test] Waiting for window focus...");
+      console.log("[Paste Operation] Waiting for window focus...");
       await new Promise((resolve2) => setTimeout(resolve2, 500));
-      console.log("[Test] Attempting to paste to window:", targetWindow.title);
+      console.log("[Paste Operation] Attempting to paste to window:", targetWindow.title);
       const success = await simulatePaste();
-      console.log("[Test] Paste result:", success ? "Success" : "Failed");
+      console.log("[Paste Operation] Paste result:", success ? "Success" : "Failed");
+      if (success) {
+        lastPastedText = textToWrite;
+      }
       event.reply("paste-status", {
         success,
         target: targetWindow.title,
