@@ -122,6 +122,8 @@ function createWindow() {
     frame: false,
     transparent: true,
     alwaysOnTop: true,
+    opacity: 0.88,
+    backgroundColor: '#00000000',
     webPreferences: {
       nodeIntegration: true,
       contextIsolation: false,
