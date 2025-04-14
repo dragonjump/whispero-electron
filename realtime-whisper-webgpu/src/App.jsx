@@ -1,5 +1,6 @@
 import { useEffect, useState, useRef } from "react";
 import { ipcRenderer } from 'electron';
+import copy from 'clipboard-copy';
 
 import { AudioVisualizer } from "./components/AudioVisualizer";
 import Progress from "./components/Progress";
@@ -7,11 +8,99 @@ import { LanguageSelector } from "./components/LanguageSelector";
 import { WindowControls } from "./components/WindowControls";
 
 // Import icons
-import { FaMicrophone, FaMicrophoneSlash, FaPlay, FaStop, FaChartBar } from 'react-icons/fa';
+import { FaMicrophone, FaMicrophoneSlash, FaPlay, FaStop, FaChartBar, FaPaste, FaBug } from 'react-icons/fa';
 
 const WHISPER_SAMPLING_RATE = 16_000;
 const MAX_AUDIO_LENGTH = 30; // seconds
 const MAX_SAMPLES = WHISPER_SAMPLING_RATE * MAX_AUDIO_LENGTH;
+
+// Add DebugPanel component
+function DebugPanel({ targetWindow, isAutoPasteEnabled }) {
+  const [showDebug, setShowDebug] = useState(false);
+
+  const refreshWindowInfo = () => {
+    if (window.electron) {
+      ipcRenderer.send('get-active-window');
+    }
+  };
+
+  useEffect(() => {
+    if (!window.electron || !showDebug) return;
+
+    // Initial check
+    refreshWindowInfo();
+
+    // Set up periodic refresh
+    const interval = setInterval(refreshWindowInfo, 1000);
+
+    return () => {
+      clearInterval(interval);
+    };
+  }, [showDebug]);
+
+  if (!showDebug) {
+    return (
+      <button
+        onClick={() => setShowDebug(true)}
+        className="fixed bottom-2 right-2 bg-gray-800/50 p-2 rounded-full hover:bg-gray-700/50"
+        title="Show Debug Panel"
+      >
+        <FaBug className="w-4 h-4" />
+      </button>
+    );
+  }
+
+  return (
+    <div className="fixed bottom-2 right-2 bg-gray-800/50 backdrop-blur-sm p-4 rounded-lg text-xs max-w-md">
+      <div className="flex justify-between items-center mb-2">
+        <h3 className="font-bold">Debug Info</h3>
+        <div className="flex gap-2">
+          <button
+            onClick={refreshWindowInfo}
+            className="text-gray-400 hover:text-white"
+            title="Refresh window info"
+          >
+            ↻
+          </button>
+          <button
+            onClick={() => setShowDebug(false)}
+            className="text-gray-400 hover:text-white"
+          >
+            ✕
+          </button>
+        </div>
+      </div>
+      
+      <div className="space-y-2">
+        <div>
+          <strong>Auto-Paste:</strong> {isAutoPasteEnabled ? 'Enabled' : 'Disabled'}
+        </div>
+        
+        <div>
+          <strong>Target Window:</strong>
+          {targetWindow ? (
+            <pre className="mt-1 bg-black/30 p-2 rounded">
+              {JSON.stringify({
+                title: targetWindow.title,
+                id: targetWindow.id,
+                processId: targetWindow.processId,
+                lastUpdate: new Date(targetWindow.timestamp).toLocaleTimeString()
+              }, null, 2)}
+            </pre>
+          ) : (
+            <div className="mt-1 text-yellow-500">
+              No target window selected. Try switching to another window.
+            </div>
+          )}
+        </div>
+
+        <div className="text-gray-400 text-xs mt-2">
+          Switch to another window to update target window info
+        </div>
+      </div>
+    </div>
+  );
+}
 
 function App() {
   // Create a reference to the worker object.
@@ -29,7 +118,7 @@ function App() {
   const [tps, setTps] = useState(null);
   const [language, setLanguage] = useState("en");
   const [lastCopyTime, setLastCopyTime] = useState(0);
-  const COPY_COOLDOWN =  0; // 300ms cooldown
+  const COPY_COOLDOWN =  1200; // 300ms cooldown
 
   // Processing
   const [recording, setRecording] = useState(false);
@@ -40,24 +129,76 @@ function App() {
   const audioContextRef = useRef(null);
   const [showVisualizer, setShowVisualizer] = useState(false);
 
-  // Add clipboard copy function
-  const copyToClipboard = async (text) => {
+  // Auto-paste
+  const [isAutoPasteEnabled, setIsAutoPasteEnabled] = useState(false);
+  const [targetWindow, setTargetWindow] = useState(null);
+  const [pasteStatus, setPasteStatus] = useState(null);
+
+  // Update copyToClipboard function
+  const copyToClipboard = async (textToCopy) => {
+    if (!textToCopy) return;
+    
     const now = Date.now();
     if (now - lastCopyTime < COPY_COOLDOWN) {
-      return; // Still in cooldown period
+      console.log('Copy cooldown in effect');
+      return false;
     }
     
     try {
       if (window.electron) {
-        // Use Electron's clipboard API
-        ipcRenderer.send('copy-to-clipboard', text);
+        // Use Electron IPC for desktop app
+        return new Promise((resolve) => {
+          const timeoutId = setTimeout(() => {
+            ipcRenderer.removeListener('clipboard-operation-status', handleStatus);
+            resolve(false);
+            setPasteStatus({
+              success: false,
+              error: 'Clipboard operation timed out',
+              timestamp: Date.now()
+            });
+          }, 2000);
+
+          const handleStatus = (_, status) => {
+            clearTimeout(timeoutId);
+            ipcRenderer.removeListener('clipboard-operation-status', handleStatus);
+            
+            if (status.success) {
+              setLastCopyTime(now);
+              setPasteStatus({
+                success: true,
+                timestamp: Date.now()
+              });
+            } else {
+              setPasteStatus({
+                success: false,
+                error: status.error || 'Failed to copy text',
+                timestamp: Date.now()
+              });
+            }
+            resolve(status.success);
+          };
+
+          ipcRenderer.on('clipboard-operation-status', handleStatus);
+          ipcRenderer.send('copy-to-clipboard', textToCopy);
+        });
       } else {
-        // Fallback to browser clipboard API
-        await navigator.clipboard.writeText(text);
+        // Use clipboard-copy for browser environments
+        await copy(textToCopy);
+        setLastCopyTime(now);
+        setPasteStatus({
+          success: true,
+          timestamp: Date.now()
+        });
+        return true;
       }
-      setLastCopyTime(now);
     } catch (err) {
       console.error('Failed to copy text:', err);
+      setPasteStatus({
+        success: false,
+        error: err.message || 'Failed to copy text',
+        timestamp: Date.now()
+      });
+      return false;
     }
   };
 
@@ -90,7 +231,7 @@ function App() {
 
   // Setup worker message handlers
   const setupWorkerHandlers = () => {
-    worker.current.addEventListener("message", (e) => {
+    worker.current.addEventListener("message", async (e) => {
       switch (e.data.status) {
         case "loading":
           setStatus("loading");
@@ -127,11 +268,14 @@ function App() {
           setTps(tps);
           break;
         case "complete":
+          const newText = e.data.output;
+          setText(newText);
           setIsProcessing(false);
-          setText(e.data.output);
-          copyToClipboard(e.data.output);
-          if (window.electron) {
-            ipcRenderer.send('text-recognized', e.data.output);
+          
+          // Copy text and handle result
+          const copySuccess = await copyToClipboard(newText);
+          if (copySuccess && window.electron) {
+            ipcRenderer.send('text-recognized', newText);
           }
           break;
         case "error":
@@ -241,6 +385,49 @@ function App() {
     setShowVisualizer(!showVisualizer);
   };
 
+  // Initialize auto-paste state
+  useEffect(() => {
+    if (window.electron) {
+      ipcRenderer.send('get-active-window');
+      const enabled = window.electron.store.get('autoPasteEnabled', false);
+      setIsAutoPasteEnabled(enabled);
+    }
+  }, []);
+
+  // Setup IPC listeners
+  useEffect(() => {
+    if (!window.electron) return;
+
+    const handleWindowChange = (_, windowInfo) => {
+      setTargetWindow(windowInfo);
+    };
+
+    const handlePasteStatus = (_, status) => {
+      setPasteStatus(status);
+      // Clear status after 2 seconds
+      setTimeout(() => setPasteStatus(null), 2000);
+    };
+
+    ipcRenderer.on('active-window-changed', handleWindowChange);
+    ipcRenderer.on('active-window-info', handleWindowChange);
+    ipcRenderer.on('paste-status', handlePasteStatus);
+
+    return () => {
+      ipcRenderer.removeListener('active-window-changed', handleWindowChange);
+      ipcRenderer.removeListener('active-window-info', handleWindowChange);
+      ipcRenderer.removeListener('paste-status', handlePasteStatus);
+    };
+  }, []);
+
+  // Toggle auto-paste
+  const toggleAutoPaste = () => {
+    const newState = !isAutoPasteEnabled;
+    setIsAutoPasteEnabled(newState);
+    if (window.electron) {
+      ipcRenderer.send('auto-paste-toggle', newState);
+    }
+  };
+
   return (
     <div className="h-screen">
       {status === "loading" ? (
@@ -267,10 +454,33 @@ function App() {
               >
                 <FaChartBar className={`w-4 h-4 ${showVisualizer ? 'text-green-500' : 'text-gray-500'}`} />
               </button>
+              <button
+                onClick={toggleAutoPaste}
+                className="text-gray-400 hover:text-gray-200 transition-colors"
+                title={`Auto-paste ${isAutoPasteEnabled ? 'enabled' : 'disabled'}`}
+              >
+                <FaPaste className={`w-4 h-4 ${isAutoPasteEnabled ? 'text-green-500' : 'text-gray-500'}`} />
+              </button>
             </div>
             <div className="w-[72px]" />
           </div>
           
+          {/* Target Window Indicator */}
+          {isAutoPasteEnabled && targetWindow && (
+            <div className="absolute top-12 right-4 bg-gray-800/50 backdrop-blur-sm rounded px-2 py-1 text-xs">
+              Target: {targetWindow.title || 'No window selected'}
+            </div>
+          )}
+
+          {/* Paste Status */}
+          {pasteStatus && (
+            <div className={`absolute top-12 left-4 rounded px-2 py-1 text-xs ${
+              pasteStatus.success ? 'bg-green-500/50' : 'bg-red-500/50'
+            } backdrop-blur-sm`}>
+              {pasteStatus.success ? 'Pasted to: ' + pasteStatus.target : 'Paste failed'}
+            </div>
+          )}
+
           <div className="flex-1 flex flex-col items-center justify-center p-4 space-y-4">
             <div className="flex items-center space-x-4">
               <button
@@ -317,6 +527,13 @@ function App() {
             )}
           </div>
         </div>
+      )}
+      
+      {process.env.NODE_ENV === 'development' && (
+        <DebugPanel
+          targetWindow={targetWindow}
+          isAutoPasteEnabled={isAutoPasteEnabled}
+        />
       )}
     </div>
   );

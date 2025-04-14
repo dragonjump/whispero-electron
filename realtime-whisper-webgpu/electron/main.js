@@ -1,7 +1,8 @@
-import { app, BrowserWindow, ipcMain, clipboard } from 'electron';
+import { app, BrowserWindow, ipcMain, clipboard, screen } from 'electron';
 import path from 'path';
 import { fileURLToPath } from 'url';
 import Store from 'electron-store';
+import { activeWindow, openWindows } from 'get-windows';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -11,6 +12,13 @@ const store = new Store();
 
 let mainWindow = null;
 let devToolsWindow = null;
+let lastActiveWindow = {
+  title: null,
+  id: null,
+  timestamp: null,
+  processId: null,
+  path: null
+};
 
 // Set up custom GPU cache path in the app's user data directory
 const userDataPath = app.getPath('userData');
@@ -27,6 +35,65 @@ app.commandLine.appendSwitch('enable-zero-copy');
 // Set memory limits for WebGPU
 app.commandLine.appendSwitch('gpu-memory-buffer-pool-size', '1024');
 app.commandLine.appendSwitch('shared-memory-size', '1024');
+
+// Add debug mode
+const DEBUG_MODE = process.env.NODE_ENV === 'development';
+
+// Add debug logging constant at the top
+const DEBUG_WINDOW_TRACKING = true;
+
+// Add clipboard operation queue and handlers
+const clipboardQueue = [];
+let isProcessingClipboard = false;
+const MAX_RETRIES = 3;
+const RETRY_DELAY = 100; // ms
+
+async function processClipboardQueue() {
+  if (isProcessingClipboard || clipboardQueue.length === 0) return;
+  
+  isProcessingClipboard = true;
+  const { text, event, retryCount = 0 } = clipboardQueue[0];
+
+  try {
+    if (DEBUG_WINDOW_TRACKING) console.log('Processing clipboard operation:', { text: text.slice(0, 50) + '...', retryCount });
+    
+    clipboard.writeText(text);
+    
+    // Notify success
+    if (event && !event.sender.isDestroyed()) {
+      event.reply('clipboard-operation-status', { success: true });
+    }
+    
+    // Remove successful operation
+    clipboardQueue.shift();
+    
+    if (DEBUG_WINDOW_TRACKING) console.log('Clipboard operation successful');
+  } catch (error) {
+    console.error('Clipboard operation failed:', error);
+    
+    if (retryCount < MAX_RETRIES) {
+      // Retry with backoff
+      clipboardQueue[0].retryCount = retryCount + 1;
+      setTimeout(processClipboardQueue, RETRY_DELAY * Math.pow(2, retryCount));
+    } else {
+      // Max retries reached, notify failure and remove
+      if (event && !event.sender.isDestroyed()) {
+        event.reply('clipboard-operation-status', { 
+          success: false, 
+          error: error.message 
+        });
+      }
+      clipboardQueue.shift();
+    }
+  } finally {
+    isProcessingClipboard = false;
+    
+    // Process next item if queue not empty
+    if (clipboardQueue.length > 0) {
+      setTimeout(processClipboardQueue, 50);
+    }
+  }
+}
 
 // Enhanced diagnostics
 async function checkGPUCapabilities() {
@@ -100,6 +167,102 @@ async function checkGPUCapabilities() {
   }
 }
 
+// Enhanced window tracking with get-windows
+async function enhancedWindowCheck() {
+  try {
+    if (DEBUG_WINDOW_TRACKING) console.log('\n--- Enhanced Window Check ---');
+    
+    const active = await activeWindow();
+    const allWindows = await openWindows();
+    
+    if (DEBUG_WINDOW_TRACKING) {
+      console.log('Active Window:', {
+        title: active?.title,
+        id: active?.id,
+        owner: active?.owner?.name,
+        bounds: active?.bounds,
+        url: active?.url
+      });
+      
+      console.log('All Windows:', allWindows.map(win => ({
+        title: win.title,
+        id: win.id,
+        owner: win.owner?.name
+      })));
+    }
+
+    if (!active) {
+      if (DEBUG_WINDOW_TRACKING) console.log('No active window detected');
+      return null;
+    }
+
+    // Skip our own window
+    if (active.owner?.name?.includes('electron')) {
+      if (DEBUG_WINDOW_TRACKING) console.log('Skipping Electron window');
+      return null;
+    }
+
+    const windowInfo = {
+      title: active.title,
+      id: active.id,
+      processId: active.owner?.processId,
+      path: active.owner?.path,
+      bounds: active.bounds,
+      url: active.url,
+      timestamp: Date.now()
+    };
+
+    if (DEBUG_WINDOW_TRACKING) {
+      console.log('Window info prepared:', windowInfo);
+      console.log('Window bounds:', active.bounds);
+      if (active.contentBounds) {
+        console.log('Content bounds:', active.contentBounds);
+      }
+    }
+
+    // Check if window changed
+    const changed = !lastActiveWindow || 
+                   lastActiveWindow.id !== windowInfo.id || 
+                   lastActiveWindow.title !== windowInfo.title;
+
+    if (changed) {
+      if (DEBUG_WINDOW_TRACKING) console.log('Window changed, updating...');
+      lastActiveWindow = windowInfo;
+      if (mainWindow && !mainWindow.isDestroyed()) {
+        mainWindow.webContents.send('active-window-changed', windowInfo);
+      }
+    }
+
+    return windowInfo;
+  } catch (error) {
+    console.error('Error in enhanced window check:', error);
+    return null;
+  } finally {
+    if (DEBUG_WINDOW_TRACKING) console.log('--- Enhanced Window Check Complete ---\n');
+  }
+}
+
+// Replace existing checkActiveWindow with enhanced version
+async function checkActiveWindow() {
+  const windowInfo = await enhancedWindowCheck();
+  
+  if (!windowInfo) {
+    // Reset tracking if no valid window found
+    if (lastActiveWindow?.id) {
+      lastActiveWindow = {
+        title: null,
+        id: null,
+        timestamp: null,
+        processId: null,
+        path: null
+      };
+      if (mainWindow && !mainWindow.isDestroyed()) {
+        mainWindow.webContents.send('active-window-changed', null);
+      }
+    }
+  }
+}
+
 function createWindow() {
   if (mainWindow) {
     return;
@@ -165,6 +328,7 @@ function createWindow() {
       const bounds = mainWindow.getBounds();
       store.set('windowState', bounds);
     }
+    clearInterval(windowCheckInterval);
   });
 
   // Listen for text recognition events
@@ -175,10 +339,46 @@ function createWindow() {
     }
   });
 
-  // Listen for clipboard copy events
+  // Add window focus/blur event handlers with enhanced logging
+  mainWindow.on('blur', async () => {
+    if (DEBUG_WINDOW_TRACKING) console.log('Main window lost focus');
+    await checkActiveWindow();
+  });
+
+  mainWindow.on('focus', async () => {
+    if (DEBUG_WINDOW_TRACKING) console.log('Main window gained focus');
+    await checkActiveWindow();
+  });
+
+  // Check active window frequently with enhanced detection
+  const windowCheckInterval = setInterval(async () => {
+    if (mainWindow && !mainWindow.isDestroyed()) {
+      await checkActiveWindow();
+    } else {
+      if (DEBUG_WINDOW_TRACKING) console.log('Clearing window check interval - main window destroyed');
+      clearInterval(windowCheckInterval);
+    }
+  }, 500);
+
+  // Add IPC handler with enhanced logging
+  ipcMain.on('get-active-window', async (event) => {
+    if (DEBUG_WINDOW_TRACKING) console.log('Received get-active-window request');
+    await checkActiveWindow();
+    event.reply('active-window-info', lastActiveWindow);
+  });
+
+  ipcMain.on('auto-paste-toggle', (event, enabled) => {
+    store.set('autoPasteEnabled', enabled);
+    console.log('Auto-paste feature:', enabled ? 'enabled' : 'disabled');
+  });
+
+  // Add clipboard handling
   ipcMain.on('copy-to-clipboard', (event, text) => {
-    clipboard.writeText(text);
-    console.log('Text copied to clipboard:', text.substring(0, 50) + (text.length > 50 ? '...' : ''));
+    if (DEBUG_WINDOW_TRACKING) console.log('Received clipboard request');
+    
+    // Add to queue
+    clipboardQueue.push({ text, event });
+    processClipboardQueue();
   });
 
   // Listen for WebGPU errors
