@@ -77,9 +77,22 @@ async function simulatePaste() {
     try {
       // Use nut.js for native keyboard simulation
       console.log('[Paste Debug] Using native keyboard simulation');
+      
+      // First do Ctrl+A to select all
+      console.log('[Paste Debug] Selecting all text (Ctrl+A)');
+      await keyboard.pressKey(Key.LeftControl);
+      await keyboard.type('a');
+      await keyboard.releaseKey(Key.LeftControl);
+      
+      // Small delay between operations
+      await new Promise(resolve => setTimeout(resolve, 50));
+      
+      // Then do Ctrl+V to paste
+      console.log('[Paste Debug] Pasting text (Ctrl+V)');
       await keyboard.pressKey(Key.LeftControl);
       await keyboard.type('v');
       await keyboard.releaseKey(Key.LeftControl);
+      
       console.log('[Paste Debug] Native paste completed successfully');
       return true;
     } catch (error) {
@@ -91,9 +104,20 @@ async function simulatePaste() {
       
       if (win && !win.isDestroyed()) {
         const modifiers = process.platform === 'darwin' ? ['cmd'] : ['control'];
+        
+        // Simulate Ctrl+A
+        win.webContents.sendInputEvent({ type: 'keyDown', keyCode: 'A', modifiers });
+        await new Promise(resolve => setTimeout(resolve, 50));
+        win.webContents.sendInputEvent({ type: 'keyUp', keyCode: 'A', modifiers });
+        
+        // Small delay between operations
+        await new Promise(resolve => setTimeout(resolve, 50));
+        
+        // Simulate Ctrl+V
         win.webContents.sendInputEvent({ type: 'keyDown', keyCode: 'V', modifiers });
         await new Promise(resolve => setTimeout(resolve, 50));
         win.webContents.sendInputEvent({ type: 'keyUp', keyCode: 'V', modifiers });
+        
         console.log('[Paste Debug] Fallback paste completed');
         return true;
       }
@@ -548,7 +572,7 @@ function createWindow() {
       
       // Set clipboard content
       clipboard.writeText(textToWrite);
-      console.log('[Paste Operation] Text copied to clipboard');
+      console.log('[Paste Operation] Text copied to clipboard:>' ,textToWrite);
       
       // Get active window
       const targetWindow = await enhancedWindowCheck();
