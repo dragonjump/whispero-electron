@@ -214,40 +214,48 @@ function App() {
   return (
     <div className="h-screen bg-transparent">
       {status === "loading" ? (
-        <div className="flex flex-col items-center justify-center h-full bg-transparent backdrop-blur-sm bg-opacity-50">
+        <div className="flex flex-col items-center justify-center h-full bg-transparent backdrop-blur-[2px] bg-opacity-30">
           <Progress items={progressItems} message={loadingMessage} />
         </div>
       ) : error ? (
-        <div className="flex items-center justify-center h-full bg-transparent backdrop-blur-sm bg-opacity-50">
-          <p className="text-red-500">{error}</p>
+        <div className="flex items-center justify-center h-full bg-transparent backdrop-blur-[2px] bg-opacity-30">
+          <p className="text-red-500 text-xs">{error}</p>
         </div>
       ) : (
-        <div className="flex flex-col h-screen mx-auto text-gray-800 dark:text-gray-200 bg-transparent backdrop-blur-sm bg-opacity-50">
-          <div className="flex-none p-4">
+        <div className="flex flex-col h-screen mx-auto text-gray-800 dark:text-gray-200 bg-transparent backdrop-blur-[2px] bg-opacity-30">
+          <div className="flex-none p-2 flex justify-between items-center">
             <WindowControls />
+            <div className="w-32 scale-75 transform -translate-y-1">
+              <LanguageSelector 
+                language={language}
+                setLanguage={setLanguage}
+                className="text-xs" 
+              />
+            </div>
+            <div className="w-[72px]" /> {/* Spacer for symmetry */}
           </div>
           
           <div className="flex-1 flex flex-col items-center justify-center p-4 space-y-4">
             <div className="flex items-center space-x-4">
               <button
                 onClick={toggleListening}
-                className={`p-4 rounded-full transition-all duration-200 ${
+                className={`p-3 rounded-full transition-all duration-200 ${
                   isListening 
                     ? 'bg-red-500 hover:bg-red-600' 
                     : 'bg-green-500 hover:bg-green-600'
                 }`}
               >
                 {isListening ? (
-                  <FaStop className="w-6 h-6 text-white" />
+                  <FaStop className="w-5 h-5 text-white" />
                 ) : (
-                  <FaPlay className="w-6 h-6 text-white" />
+                  <FaPlay className="w-5 h-5 text-white" />
                 )}
               </button>
               <div className="relative">
                 {isListening ? (
-                  <FaMicrophone className="w-8 h-8 text-green-500 animate-pulse" />
+                  <FaMicrophone className="w-6 h-6 text-green-500 animate-pulse" />
                 ) : (
-                  <FaMicrophoneSlash className="w-8 h-8 text-red-500" />
+                  <FaMicrophoneSlash className="w-6 h-6 text-red-500" />
                 )}
               </div>
             </div>
@@ -258,13 +266,9 @@ function App() {
               isListening={isListening}
             />
             
-            <div className="w-full max-w-2xl">
-              <LanguageSelector value={language} onChange={setLanguage} />
-            </div>
-            
             {text && (
-              <div className="w-full max-w-2xl bg-white dark:bg-gray-800 rounded-lg p-4 shadow-lg">
-                <p className="text-lg">{text}</p>
+              <div className="w-full max-w-2xl bg-black/20 backdrop-blur-[2px] rounded-lg p-3 shadow-lg">
+                <p className="text-xs text-white">{text}</p>
               </div>
             )}
           </div>
