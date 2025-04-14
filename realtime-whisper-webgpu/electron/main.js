@@ -137,6 +137,9 @@ let isProcessingPaste = false;
 const MAX_PASTE_RETRIES = 3;
 const PASTE_RETRY_DELAY = 500;
 
+// Add variable to track last pasted text
+let lastPastedText = '';
+
 async function processClipboardQueue() {
   if (isProcessingClipboard || clipboardQueue.length === 0) return;
   
@@ -565,10 +568,22 @@ function createWindow() {
 
   // Listen for text recognition events
   ipcMain.on('text-recognized', async (event, text) => {
-    console.log('[Paste Operation] Text recognized, attempting to paste');
+    console.log('[Paste Operation] Text recognized, checking if changed');
     try {
       // Ensure text is a string
       const textToWrite = Array.isArray(text) ? text.join(' ') : text;
+      
+      // Check if text has changed
+      if (textToWrite === lastPastedText) {
+        console.log('[Paste Operation] Text unchanged, skipping paste');
+        event.reply('paste-status', {
+          success: true,
+          skipped: true,
+          reason: 'Text unchanged',
+          timestamp: Date.now()
+        });
+        return;
+      }
       
       // Set clipboard content
       clipboard.writeText(textToWrite);
@@ -600,6 +615,11 @@ function createWindow() {
       console.log('[Paste Operation] Attempting to paste to window:', targetWindow.title);
       const success = await simulatePaste();
       console.log('[Paste Operation] Paste result:', success ? 'Success' : 'Failed');
+      
+      // Update last pasted text only if paste was successful
+      if (success) {
+        lastPastedText = textToWrite;
+      }
       
       event.reply('paste-status', {
         success: success,

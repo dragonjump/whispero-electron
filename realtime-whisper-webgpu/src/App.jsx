@@ -295,6 +295,14 @@ function App() {
           break;
         case "complete":
           const newText = e.data.output;
+          
+          // Don't update if text hasn't changed
+          if (newText === text) {
+            console.log('[Text Debug] Text unchanged, skipping update');
+            setIsProcessing(false);
+            return;
+          }
+          
           setText(newText);
           setIsProcessing(false);
           
