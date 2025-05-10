@@ -513,12 +513,19 @@ function App() {
               <div className="flex items-center gap-2 app-region-no-drag">
                 <WindowControls buttonSize="sm" onMaximizeClick={toggleFullScreen} />
               </div>
-              <div className="flex-1 flex justify-center">
+              <div className=" ml-4 flex-1  flex justify-keft">
                 <span className="text-base font-semibold tracking-wide" style={{ fontSize: '0.75em' }}>
                   Whispero - Voice to Text
                 </span>
               </div>
-              <div className="w-24 scale-90 transform -translate-y-1 flex items-center gap-2 app-region-no-drag">
+            </div>
+            {/* Separator */}
+            <div className="h-[2px] w-full bg-gray-700 dark:bg-gray-800 shadow" />
+          </div>
+
+          {/* Target Window Indicator */}
+          
+          <div className="w-24 scale-90 transform -translate-y-1 flex items-center gap-2 app-region-no-drag">
                 <LanguageSelector
                   language={language}
                   setLanguage={setLanguage}
@@ -540,12 +547,7 @@ function App() {
                   <FaPaste className={`w-4 h-4 ${autoPasteEnabled ? 'text-green-500' : 'text-gray-500'}`} />
                 </button>
               </div>
-            </div>
-            {/* Separator */}
-            <div className="h-[2px] w-full bg-gray-700 dark:bg-gray-800 shadow" />
-          </div>
-
-          {/* Target Window Indicator */}
+              
           {autoPasteEnabled && targetWindow && (
             <div className="absolute top-12 right-4 bg-gray-800/50 backdrop-blur-sm rounded px-2 py-1 text-xs">
               Target: {targetWindow.title || 'No window selected'}

@@ -8,6 +8,13 @@ export function WindowControls({ buttonSize = 'md', onMaximizeClick }) {
   return (
     <div className="flex gap-1 -app-region-no-drag">
       <button
+        onClick={() => ipcRenderer.send('close-window')}
+        className={`${sizeClass} rounded-full bg-red-500 hover:bg-red-600 flex items-center justify-center text-white`}
+        title="Close"
+      >
+        <span className={iconSize}> </span>
+      </button>
+      <button
         onClick={() => ipcRenderer.send('minimize-window')}
         className={`${sizeClass} rounded-full bg-yellow-400 hover:bg-yellow-500 flex items-center justify-center text-black`}
         title="Minimize"
@@ -21,13 +28,7 @@ export function WindowControls({ buttonSize = 'md', onMaximizeClick }) {
       >
         <span className={iconSize}> </span>
       </button>
-      <button
-        onClick={() => ipcRenderer.send('close-window')}
-        className={`${sizeClass} rounded-full bg-red-500 hover:bg-red-600 flex items-center justify-center text-white`}
-        title="Close"
-      >
-        <span className={iconSize}> </span>
-      </button>
+
     </div>
   );
 } 
