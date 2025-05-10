@@ -30,6 +30,16 @@
   .overflow-wrap-anywhere {
     overflow-wrap: anywhere;
   }
+
+  /* Custom pulse scale animation */
+  @keyframes pulse-scale {
+    0%, 100% { transform: scale(1); }
+    50% { transform: scale(1.08); } /* Slightly smaller scale */
+  }
+
+  .animate-pulse-scale {
+    animation: pulse-scale 1.8s cubic-bezier(0.4, 0, 0.6, 1) infinite; /* Slower animation */
+  }
 }
 .hidden{
   display: none !important;
@@ -60,6 +70,24 @@ html, body {
 #root {
   height: 100%;
   overflow: auto;
+  position: relative;
+}
+
+/* Add background logo */
+#root::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background-image: url('/src/assets/whispero-logo.png');
+  background-repeat: no-repeat;
+  background-position: center center;
+  background-size: contain;
+  opacity: 0.1;
+  z-index: -1;
+  pointer-events: none;
 }
 
 /* Window dragging regions */

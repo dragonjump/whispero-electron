@@ -728,6 +728,17 @@ function createWindow() {
     pasteQueue.push({ text, event });
     processPasteQueue();
   });
+
+  // Add toggle maximize window handler
+  ipcMain.on('toggle-maximize-window', () => {
+    if (mainWindow && !mainWindow.isDestroyed()) {
+      if (mainWindow.isMaximized()) {
+        mainWindow.unmaximize();
+      } else {
+        mainWindow.maximize();
+      }
+    }
+  });
 }
 
 // Start the app when ready

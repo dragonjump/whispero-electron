@@ -42,7 +42,7 @@ function DebugPanel({ targetWindow, isAutoPasteEnabled, pasteStatus, toggleAutoP
     return (
       <button
         onClick={() => setShowDebug(true)}
-        className="fixed bottom-2 right-2 bg-gray-800/50 p-2 rounded-full hover:bg-gray-700/50"
+        className="fixed bottom-2 left-2 bg-gray-800/50 p-2 rounded-full hover:bg-gray-700/50"
         title="Show Debug Panel"
       >
         <FaBug className="w-4 h-4" />
@@ -70,20 +70,19 @@ function DebugPanel({ targetWindow, isAutoPasteEnabled, pasteStatus, toggleAutoP
           </button>
         </div>
       </div>
-      
+
       <div className="space-y-2">
         <div className="flex items-center gap-2">
           <strong>Auto-Paste:</strong>
           <button
             onClick={toggleAutoPaste}
-            className={`px-2 py-1 rounded ${
-              isAutoPasteEnabled ? 'bg-green-500/50' : 'bg-red-500/50'
-            }`}
+            className={`px-2 py-1 rounded ${isAutoPasteEnabled ? 'bg-green-500/50' : 'bg-red-500/50'
+              }`}
           >
             {isAutoPasteEnabled ? 'Enabled' : 'Disabled'}
           </button>
         </div>
-        
+
         {/* {pasteStatus && (
           <div className="hidden">
             <strong>Last Paste:</strong>
@@ -101,7 +100,7 @@ function DebugPanel({ targetWindow, isAutoPasteEnabled, pasteStatus, toggleAutoP
             </div>
           </div>
         )} */}
-        
+
         <div>
           <strong>Target Window:</strong>
           {targetWindow ? (
@@ -144,7 +143,7 @@ function App() {
   const [tps, setTps] = useState(null);
   const [language, setLanguage] = useState("en");
   const [lastCopyTime, setLastCopyTime] = useState(0);
-  const COPY_COOLDOWN =  2100; // 300ms cooldown
+  const COPY_COOLDOWN = 2100; // 300ms cooldown
 
   // Processing
   const [recording, setRecording] = useState(false);
@@ -163,13 +162,13 @@ function App() {
   // Update copyToClipboard function
   const copyToClipboard = async (textToCopy) => {
     if (!textToCopy) return;
-    
+
     const now = Date.now();
     if (now - lastCopyTime < COPY_COOLDOWN) {
       console.log('Copy cooldown in effect');
       return false;
     }
-    
+
     try {
       if (window.electron) {
         // Use Electron IPC for desktop app
@@ -187,7 +186,7 @@ function App() {
           const handleStatus = (_, status) => {
             clearTimeout(timeoutId);
             ipcRenderer.removeListener('clipboard-operation-status', handleStatus);
-            
+
             if (status.success) {
               setLastCopyTime(now);
               setPasteStatus({
@@ -249,7 +248,7 @@ function App() {
         type: "module",
       });
       setupWorkerHandlers();
-      
+
       // Start loading the model
       worker.current.postMessage({ type: 'load' });
     }
@@ -295,17 +294,17 @@ function App() {
           break;
         case "complete":
           const newText = e.data.output;
-          
+
           // Don't update if text hasn't changed
           if (newText === text) {
             console.log('[Text Debug] Text unchanged, skipping update');
             setIsProcessing(false);
             return;
           }
-          
+
           setText(newText);
           setIsProcessing(false);
-          
+
           // Copy text and handle result
           const copySuccess = await copyToClipboard(newText);
           if (copySuccess && window.electron) {
@@ -424,17 +423,17 @@ function App() {
   // Initialize auto-paste state
   useEffect(() => {
     if (!window.electron) return;
-    
+
     // Load auto-paste setting with true as default
     const stored = window.electron.store.get('autoPasteEnabled', true);
     setAutoPasteEnabled(stored);
-    
+
     // Listen for paste status
     ipcRenderer.on('paste-status', (_, status) => {
       console.log('[Auto-Paste] Status received:', status);
       setPasteStatus(status);
     });
-    
+
     return () => {
       ipcRenderer.removeListener('paste-status', setPasteStatus);
     };
@@ -483,47 +482,60 @@ function App() {
   return (
     <div className="h-screen">
       {status === "loading" ? (
-        <div className="flex flex-col items-center justify-center h-full">
-          <Progress items={progressItems} message={loadingMessage} />
+        <div className="flex flex-col items-center justify-center h-full text-center px-4">
+          <h1 className="text-2xl font-bold mb-2 text-white/90">WhisperO</h1>
+          <p className="text-sm text-gray-400 mb-4">
+            Whisper your thoughts, we'll write them down. <br />
+           <small> Offline, private & secure. Precise voice to transcribed text  dictation</small>
+          </p>
+          <div className="w-full max-w-xs"> {/* Container for progress bar */}
+            <Progress items={progressItems} message={loadingMessage} />
+          </div>
         </div>
       ) : error ? (
         <div className="flex items-center justify-center h-full">
           <p className="text-red-500 text-xs">{error}</p>
         </div>
       ) : (
-        <div className="flex flex-col h-screen mx-auto text-gray-800 dark:text-gray-200">
-          <div className="flex-none p-2 flex justify-between items-center">
-            <WindowControls />
-            <div className="w-32 scale-75 transform -translate-y-1 flex items-center gap-2">
-              <LanguageSelector 
-                language={language}
-                setLanguage={setLanguage}
-                className="text-xs" 
-              />
-              <button 
-                onClick={toggleVisualizer}
-                className="text-gray-400 hover:text-gray-200 transition-colors"
-              >
-                <FaChartBar className={`w-4 h-4 ${showVisualizer ? 'text-green-500' : 'text-gray-500'}`} />
-              </button>
-              <button
-                onClick={toggleAutoPaste}
-                className="text-gray-400 hover:text-gray-200 transition-colors"
-                title={`Auto-paste ${autoPasteEnabled ? 'enabled' : 'disabled'}`}
-              >
-                <FaPaste className={`w-4 h-4 ${autoPasteEnabled ? 'text-green-500' : 'text-gray-500'}`} />
-              </button>
-              <div className="relative">
-                {isListening ? (
-                  <FaMicrophone className="w-4 h-4 text-green-500 animate-pulse" title="Listening"/>
-                ) : (
-                  <FaMicrophoneSlash className="w-4 h-4 text-red-500" title="Stopped"/>
-                )}
+        <div className="flex flex-col h-screen mx-auto text-gray-800 dark:text-gray-200 rounded-2xl overflow-hidden shadow-lg" style={{ borderRadius: '18px' }}>
+          {/* New Header Bar */}
+          <div className="flex-none">
+            <div className="bg-gray-900 dark:bg-gray-900 text-white flex items-center justify-between px-2 py-1 app-region-drag select-none rounded-t-2xl">
+              <div className="flex items-center gap-2 app-region-no-drag scale-75">
+                <WindowControls showMaximize={true} />
+              </div>
+              <div className="flex-1 flex justify-centerx">
+                <span className="text-base font-semibold tracking-wide" style={{ fontSize: '55%' }}>
+                  Whispero - Voice to Text
+                </span>
+              </div>
+              <div className="w-32 scale-75 transform -translate-y-1 flex items-center gap-2 app-region-no-drag">
+                <LanguageSelector
+                  language={language}
+                  setLanguage={setLanguage}
+                  className="text-xs"
+                />
+                <button
+                  onClick={toggleVisualizer}
+                  className="text-gray-400 hover:text-gray-200 transition-colors"
+                  style={{ fontSize: '70%' }}
+                >
+                  <FaChartBar className={`w-4 h-4 ${showVisualizer ? 'text-green-500' : 'text-gray-500'}`} />
+                </button>
+                <button
+                  onClick={toggleAutoPaste}
+                  className="text-gray-400 hover:text-gray-200 transition-colors"
+                  title={`Auto-paste ${autoPasteEnabled ? 'enabled' : 'disabled'}`}
+                  style={{ fontSize: '70%' }}
+                >
+                  <FaPaste className={`w-4 h-4 ${autoPasteEnabled ? 'text-green-500' : 'text-gray-500'}`} />
+                </button>
               </div>
             </div>
-            <div className="w-[72px]" />
+            {/* Separator */}
+            <div className="h-[2px] w-full bg-gray-700 dark:bg-gray-800 shadow" />
           </div>
-          
+
           {/* Target Window Indicator */}
           {autoPasteEnabled && targetWindow && (
             <div className="absolute top-12 right-4 bg-gray-800/50 backdrop-blur-sm rounded px-2 py-1 text-xs">
@@ -533,9 +545,8 @@ function App() {
 
           {/* Paste Status - Hidden */}
           {pasteStatus && (
-            <div className={`absolute top-12 left-4 rounded px-2 py-1 text-xs ${
-              pasteStatus.success ? 'bg-green-500/50' : 'bg-red-500/50'
-            } backdrop-blur-sm hidden`}>
+            <div className={`absolute top-12 left-4 rounded px-2 py-1 text-xs ${pasteStatus.success ? 'bg-green-500/50' : 'bg-red-500/50'
+              } backdrop-blur-sm hidden`}>
               {pasteStatus.success ? 'Pasted' : 'Paste failed'}
             </div>
           )}
@@ -545,42 +556,49 @@ function App() {
               <button
                 onClick={toggleListening}
                 className={`p-3 rounded-full transition-all duration-200 ${
-                  isListening 
-                    ? 'bg-red-500 hover:bg-red-600' 
-                    : 'bg-green-500 hover:bg-green-600'
+                  isListening
+                    ? 'bg-green-500 hover:bg-green-600 animate-pulse-scale' // Green + Pulse when listening
+                    : 'bg-red-500 hover:bg-red-600'                      // Red when stopped
                 }`}
               >
                 {isListening ? (
-                  <FaMicrophoneSlash className="w-5 h-5 text-white animate-pulse" />
+                  <FaMicrophone className="w-5 h-5 text-white" /> // Show Mic when listening
                 ) : (
-                  <FaMicrophone className="w-5 h-5 text-white" />
+                  <FaMicrophoneSlash className="w-5 h-5 text-white" /> // Show Slashed Mic when stopped
                 )}
               </button>
             </div>
 
             {showVisualizer && (
               <div className="transition-opacity hover:opacity-80">
-                <AudioVisualizer  
-                  stream={stream} 
-                  isProcessing={isProcessing} 
+                <AudioVisualizer
+                  stream={stream}
+                  isProcessing={isProcessing}
                   isListening={isListening}
                 />
               </div>
             )}
-            
+
             {text && (
-              <div 
+              <div
                 className="w-full max-w-2xl rounded-lg p-3 shadow-lg backdrop-blur-sm cursor-pointer hover:bg-white/5 overflow-y-auto max-h-40"
                 onClick={() => copyToClipboard(text)}
                 title="Click to copy"
               >
-                <p className="text-xs text-white select-text">{text}</p>
+                <p className="text-xs text-white select-none">{text}</p>
               </div>
             )}
           </div>
         </div>
       )}
-      
+
+      {/* Logo in bottom right corner */}
+      <img
+        src="/whispero-logo.png"
+        alt="Whispero Logo"
+        className="fixed bottom-2 right-2 w-8 h-8 opacity-30 pointer-events-none"
+      />
+
       {process.env.NODE_ENV === 'development' && (
         <DebugPanel
           targetWindow={targetWindow}
