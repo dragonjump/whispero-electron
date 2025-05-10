@@ -139,7 +139,7 @@ button, input, select, a {
 
 .custom-scrollbar {
   scrollbar-width: thin;
-  scrollbar-color: #a5b4fc #f3f4f6;
+  scrollbar-color: #4b5067 #f3f4f6;
 }
 .custom-scrollbar::-webkit-scrollbar {
   width: 8px;
@@ -157,4 +157,34 @@ button, input, select, a {
 }
 .dark .custom-scrollbar::-webkit-scrollbar-thumb {
   background: #6366f1;
+}
+
+.transcribed-scrollbar::-webkit-scrollbar {
+  width: 10px;
+  background: #fff;
+}
+.transcribed-scrollbar::-webkit-scrollbar-thumb {
+  background: #e5e7eb;
+  border-radius: 8px;
+}
+.transcribed-scrollbar::-webkit-scrollbar-thumb:hover {
+  background: #d1d5db;
+}
+.dark .transcribed-scrollbar::-webkit-scrollbar {
+  background: #18181b;
+}
+.dark .transcribed-scrollbar::-webkit-scrollbar-thumb {
+  background: #23272f;
+  border-radius: 8px;
+}
+.dark .transcribed-scrollbar::-webkit-scrollbar-thumb:hover {
+  background: #3f3f46;
+}
+
+.transcribed-scrollbar {
+  scrollbar-width: thin;
+  scrollbar-color: #e5e7eb #fff;
+}
+.dark .transcribed-scrollbar {
+  scrollbar-color: #23272f #18181b;
 }

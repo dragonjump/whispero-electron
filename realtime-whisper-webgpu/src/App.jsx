@@ -594,10 +594,17 @@ function App() {
                 </div>
               )}
               {/* Listening text */}
-              <div className="ml-6">
+              {isListening && (      <div className="ml-6">
                 <div className="font-medium text-white text-lg">Listening...</div>
                 <div className="text-sm text-gray-300">Speak now</div>
               </div>
+              )}
+              {!isListening && (      <div className="ml-6">
+                <div className="font-medium text-white text-lg">Not Listening </div>
+                <div className="text-sm text-gray-300">Tap to Speak now</div>
+              </div>
+              )}
+           
             </div>
 
             {showVisualizer && (
@@ -629,14 +636,7 @@ function App() {
                     }
                   >
                     {para}
-                    <br/>dummydummydummydummydummydummy 
-                    <br/>dummydummydummydummydummydummy 
-                
-                    <br/>dummydummydummydummydummydummy 
-                    <br/>dummydummydummydummydummydummy 
-                    <br/>dummydummydummydummydummydummy 
-                    <br/>dummydummydummydummydummydummy 
-                    <br/>dummydummydummydummydummydummy 
+                   
                   </p>
                 
                 ))}

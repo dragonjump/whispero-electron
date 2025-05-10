@@ -120,7 +120,7 @@ export function LanguageSelector({ language, setLanguage }) {
 
   return (
     <select
-      className="border rounded-lg p-2 max-w-[100px]"
+      className="border rounded-lg px-3 py-1 text-xs min-w-[140px] h-7"
       value={language}
       onChange={handleLanguageChange}
     >
