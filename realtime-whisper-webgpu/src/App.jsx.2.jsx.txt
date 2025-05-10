@@ -9,7 +9,7 @@ import { WindowControls } from "./components/WindowControls";
 
 // Import icons
 import { FaMicrophone, FaMicrophoneSlash, FaPlay, FaStop, FaChartBar, FaPaste, FaBug } from 'react-icons/fa';
-
+import logo from './assets/whispero-logo.png';
 
 const WHISPER_SAMPLING_RATE = 16_000;
 const MAX_AUDIO_LENGTH = 30; // seconds
@@ -501,10 +501,9 @@ function App() {
 
             <small className="text-white/90"> Offline, private & secure. Precise voice to transcribed text  dictation</small>
           </p>
-          {/* <div className="w-full max-w-xs">  */}
-          {/* Container for progress bar */}
-          {/* <Progress items={progressItems} message={loadingMessage} /> */}
-          {/* </div> */}
+          <div className="w-full max-w-xs"> {/* Container for progress bar */}
+            {/* <Progress items={progressItems} message={loadingMessage} /> */}
+          </div>
         </div>
       ) : error ? (
         <div className="flex items-center justify-center h-full">
@@ -577,8 +576,8 @@ function App() {
               <button
                 onClick={toggleListening}
                 className={`w-12 h-12 rounded-full flex items-center justify-center transition-all duration-200 shadow-md focus:outline-none ${isListening
-                  ? 'bg-indigo-100 dark:bg-indigo-900 text-indigo-600 dark:text-indigo-400'
-                  : 'bg-red-500 hover:bg-red-600 text-white'
+                    ? 'bg-indigo-100 dark:bg-indigo-900 text-indigo-600 dark:text-indigo-400'
+                    : 'bg-red-500 hover:bg-red-600 text-white'
                   }`}
                 title={isListening ? 'Stop Listening' : 'Start Listening'}
               >
@@ -652,7 +651,7 @@ function App() {
 
       {/* Logo in bottom right corner */}
       <img
-        src="/whispero-logo.png"
+        src={logo}
         alt="Whispero Logo"
         className="fixed bottom-2 right-2 w-8 h-8 opacity-30 pointer-events-none"
       />

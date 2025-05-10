@@ -523,6 +523,7 @@ function createWindow() {
     alwaysOnTop: true,
     opacity: 0.895,
     backgroundColor: '#00000000',
+    icon: path.join(__dirname, '../public/whispero-logo.png'),
     webPreferences: {
       nodeIntegration: true,
       contextIsolation: false,
@@ -547,11 +548,11 @@ function createWindow() {
   mainWindow = new BrowserWindow(browserWindowOptions);
 
   // Load the app immediately
+    mainWindow.webContents.openDevTools({ mode: 'detach' });
   if (process.env.NODE_ENV === 'development') {
     mainWindow.loadURL('http://localhost:5173');
     
     // Open DevTools in development
-    mainWindow.webContents.openDevTools({ mode: 'detach' });
   } else {
     mainWindow.loadFile(path.join(__dirname, '../dist/index.html'));
   }
