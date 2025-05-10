@@ -563,21 +563,38 @@ function App() {
           )}
 
           <div className="flex-1 flex flex-col items-center justify-center p-4 space-y-4 select-none">
-            <div className="flex items-center space-x-4">
+            {/* Listening header row */}
+            <div className="flex items-center mb-6 w-full max-w-2xl">
+              {/* Microphone button */}
               <button
                 onClick={toggleListening}
-                className={`p-3 rounded-full transition-all duration-200 ${
+                className={`w-12 h-12 rounded-full flex items-center justify-center transition-all duration-200 shadow-md focus:outline-none ${
                   isListening
-                    ? 'bg-green-500 hover:bg-green-600 animate-pulse-scale' // Green + Pulse when listening
-                    : 'bg-red-500 hover:bg-red-600'                      // Red when stopped
+                    ? 'bg-indigo-100 dark:bg-indigo-900 text-indigo-600 dark:text-indigo-400'
+                    : 'bg-red-500 hover:bg-red-600 text-white'
                 }`}
+                title={isListening ? 'Stop Listening' : 'Start Listening'}
               >
                 {isListening ? (
-                  <FaMicrophone className="w-5 h-5 text-white" /> // Show Mic when listening
+                  <FaMicrophone className="w-7 h-7" />
                 ) : (
-                  <FaMicrophoneSlash className="w-5 h-5 text-white" /> // Show Slashed Mic when stopped
+                  <FaMicrophoneSlash className="w-7 h-7" />
                 )}
               </button>
+              {/* Animated wave when listening */}
+              {isListening && (
+                <div className="ml-4 flex space-x-1">
+                  <div className="w-1 h-4 bg-indigo-400 rounded-full animate-bounce" style={{ animationDelay: '0.1s' }}></div>
+                  <div className="w-1 h-6 bg-indigo-500 rounded-full animate-bounce" style={{ animationDelay: '0.2s' }}></div>
+                  <div className="w-1 h-4 bg-indigo-400 rounded-full animate-bounce" style={{ animationDelay: '0.3s' }}></div>
+                  <div className="w-1 h-2 bg-indigo-300 rounded-full animate-bounce" style={{ animationDelay: '0.4s' }}></div>
+                </div>
+              )}
+              {/* Listening text */}
+              <div className="ml-6">
+                <div className="font-medium text-white text-lg">Listening...</div>
+                <div className="text-sm text-gray-300">Speak now</div>
+              </div>
             </div>
 
             {showVisualizer && (
@@ -590,13 +607,27 @@ function App() {
               </div>
             )}
 
+            {/* Transcribed text area */}
             {text && (
               <div
-                className="w-full max-w-2xl rounded-lg p-3 shadow-lg backdrop-blur-sm cursor-pointer hover:bg-white/5 overflow-y-auto max-h-40"
+                className="w-full max-w-2xl bg-gray-50 dark:bg-dark-600 rounded-lg p-4 h-48 overflow-y-auto transition-colors shadow-inner custom-scrollbar"
+                style={{ fontFamily: 'inherit', fontSize: '1.08em' }}
                 onClick={() => copyToClipboard(text)}
                 title="Click to copy"
               >
-                <p className="text-xs text-white select-none">{text}</p>
+                {/* Split text into paragraphs for better styling */}
+                {(typeof text === 'string' ? text : String(text || '')).split(/\n+/).map((para, idx) => (
+                  <p
+                    key={idx}
+                    className={
+                      idx === 0
+                        ? 'text-gray-800 dark:text-dark-100 font-mono break-words'
+                        : 'text-gray-800 dark:text-dark-100 mt-2 break-words'
+                    }
+                  >
+                    {para}
+                  </p>
+                ))}
               </div>
             )}
           </div>
