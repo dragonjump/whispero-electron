@@ -1,4 +1,4 @@
-import { useEffect, useState, useRef } from "react";
+import { useEffect, useState, useRef, useCallback } from "react";
 import { ipcRenderer } from 'electron';
 import copy from 'clipboard-copy';
 
@@ -158,6 +158,8 @@ function App() {
   const [autoPasteEnabled, setAutoPasteEnabled] = useState(true);
   const [targetWindow, setTargetWindow] = useState(null);
   const [pasteStatus, setPasteStatus] = useState(null);
+
+  const transcribedRef = useRef(null);
 
   // Update copyToClipboard function
   const copyToClipboard = async (textToCopy) => {
@@ -620,8 +622,10 @@ function App() {
             {/* Transcribed text area */}
             {text && (
               <div
-                className=" app-region-no-drag  w-full max-w-2xl bg-gray-50 dark:bg-dark-600 rounded-lg p-4 h-48 overflow-y-auto transition-colors shadow-inner custom-scrollbar"
+                className="app-region-no-drag w-full max-w-2xl bg-gray-50 dark:bg-dark-600 rounded-lg p-4 h-48 overflow-y-auto transition-colors shadow-inner custom-scrollbar transcribed-scrollbar"
                 style={{ fontFamily: 'inherit', fontSize: '1.08em' }}
+                tabIndex={0}
+                ref={transcribedRef}
                 onClick={() => copyToClipboard(text)}
                 title="Click to copy"
               >
@@ -636,9 +640,7 @@ function App() {
                     }
                   >
                     {para}
-                   
                   </p>
-                
                 ))}
               </div>
             )}
