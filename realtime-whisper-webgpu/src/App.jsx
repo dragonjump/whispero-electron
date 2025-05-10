@@ -479,8 +479,17 @@ function App() {
     }
   };
 
+  // Add fullscreen toggle handler
+  const toggleFullScreen = () => {
+    if (window.electron && window.electron.ipcRenderer) {
+      window.electron.ipcRenderer.send('toggle-fullscreen');
+    } else if (typeof ipcRenderer !== 'undefined') {
+      ipcRenderer.send('toggle-fullscreen');
+    }
+  };
+
   return (
-    <div className="h-screen">
+    <div className="h-screen bg-gray-900/80 rounded-xl overflow-hidden shadow-xl">
       {status === "loading" ? (
         <div className="flex flex-col items-center justify-center h-full text-center px-4">
           <h1 className="text-2xl font-bold mb-2 text-white/90">WhisperO</h1>
@@ -499,82 +508,95 @@ function App() {
       ) : (
         <div className="flex flex-col h-screen mx-auto text-gray-800 dark:text-gray-200">
           {/* New Header Bar */}
-          <div className="flex-none">
-            <div className="bg-gray-900 dark:bg-gray-900 text-white flex items-center justify-between px-2 py-1 app-region-drag select-none rounded-t-xl" style={{ borderTopLeftRadius: '1rem', borderTopRightRadius: '1rem' }}>
-              <div className="flex items-center gap-1 app-region-no-drag">
-                <WindowControls buttonClassName="scale-75" showMaximize onMaximize={() => {
-                  if (window.electron) window.electron.ipcRenderer.send('toggle-fullscreen');
-                }} />
+          <div className="flex-none rounded-t-xl overflow-hidden">
+            <div className="bg-gray-900 dark:bg-gray-900 text-white flex items-center justify-between px-2 py-1 app-region-drag select-none rounded-t-xl">
+              <div className="flex items-center gap-2 app-region-no-drag">
+                <WindowControls buttonSize="sm" onMaximizeClick={toggleFullScreen} />
               </div>
               <div className="flex-1 flex justify-center">
-                <span className="text-base font-semibold tracking-wide" style={{ fontSize: '0.75rem' }}>Whispero - Voice to Text</span>
+                <span className="text-base font-semibold tracking-wide" style={{ fontSize: '0.75em' }}>
+                  Whispero - Voice to Text
+                </span>
               </div>
-              <div className="w-32" />
+              <div className="w-24 scale-90 transform -translate-y-1 flex items-center gap-2 app-region-no-drag">
+                <LanguageSelector
+                  language={language}
+                  setLanguage={setLanguage}
+                  className="text-xs"
+                />
+                <button
+                  onClick={toggleVisualizer}
+                  className="text-gray-400 hover:text-gray-200 transition-colors text-base"
+                  style={{ fontSize: '0.75em' }}
+                >
+                  <FaChartBar className={`w-4 h-4 ${showVisualizer ? 'text-green-500' : 'text-gray-500'}`} />
+                </button>
+                <button
+                  onClick={toggleAutoPaste}
+                  className="text-gray-400 hover:text-gray-200 transition-colors text-base"
+                  title={`Auto-paste ${autoPasteEnabled ? 'enabled' : 'disabled'}`}
+                  style={{ fontSize: '0.75em' }}
+                >
+                  <FaPaste className={`w-4 h-4 ${autoPasteEnabled ? 'text-green-500' : 'text-gray-500'}`} />
+                </button>
+              </div>
             </div>
             {/* Separator */}
             <div className="h-[2px] w-full bg-gray-700 dark:bg-gray-800 shadow" />
           </div>
 
-          {/* Controls under header, left side */}
-          <div className="flex flex-row flex-1 rounded-b-xl overflow-hidden" style={{ borderBottomLeftRadius: '1rem', borderBottomRightRadius: '1rem' }}>
-            <div className="flex flex-col items-start gap-2 p-3 min-w-[60px]">
-              <LanguageSelector
-                language={language}
-                setLanguage={setLanguage}
-                className="text-xs"
-              />
+          {/* Target Window Indicator */}
+          {autoPasteEnabled && targetWindow && (
+            <div className="absolute top-12 right-4 bg-gray-800/50 backdrop-blur-sm rounded px-2 py-1 text-xs">
+              Target: {targetWindow.title || 'No window selected'}
+            </div>
+          )}
+
+          {/* Paste Status - Hidden */}
+          {pasteStatus && (
+            <div className={`absolute top-12 left-4 rounded px-2 py-1 text-xs ${pasteStatus.success ? 'bg-green-500/50' : 'bg-red-500/50'
+              } backdrop-blur-sm hidden`}>
+              {pasteStatus.success ? 'Pasted' : 'Paste failed'}
+            </div>
+          )}
+
+          <div className="flex-1 flex flex-col items-center justify-center p-4 space-y-4 select-none">
+            <div className="flex items-center space-x-4">
               <button
-                onClick={toggleVisualizer}
-                className="text-gray-400 hover:text-gray-200 transition-colors"
+                onClick={toggleListening}
+                className={`p-3 rounded-full transition-all duration-200 ${
+                  isListening
+                    ? 'bg-green-500 hover:bg-green-600 animate-pulse-scale' // Green + Pulse when listening
+                    : 'bg-red-500 hover:bg-red-600'                      // Red when stopped
+                }`}
               >
-                <FaChartBar className={`w-4 h-4 ${showVisualizer ? 'text-green-500' : 'text-gray-500'}`} />
-              </button>
-              <button
-                onClick={toggleAutoPaste}
-                className="text-gray-400 hover:text-gray-200 transition-colors"
-                title={`Auto-paste ${autoPasteEnabled ? 'enabled' : 'disabled'}`}
-              >
-                <FaPaste className={`w-4 h-4 ${autoPasteEnabled ? 'text-green-500' : 'text-gray-500'}`} />
+                {isListening ? (
+                  <FaMicrophone className="w-5 h-5 text-white" /> // Show Mic when listening
+                ) : (
+                  <FaMicrophoneSlash className="w-5 h-5 text-white" /> // Show Slashed Mic when stopped
+                )}
               </button>
             </div>
-            <div className="flex-1 flex flex-col items-center justify-center p-4 space-y-4 select-none">
-              <div className="flex items-center space-x-4">
-                <button
-                  onClick={toggleListening}
-                  className={`p-3 rounded-full transition-all duration-200 ${
-                    isListening
-                      ? 'bg-green-500 hover:bg-green-600 animate-pulse-scale' // Green + Pulse when listening
-                      : 'bg-red-500 hover:bg-red-600'                      // Red when stopped
-                  }`}
-                >
-                  {isListening ? (
-                    <FaMicrophone className="w-5 h-5 text-white" /> // Show Mic when listening
-                  ) : (
-                    <FaMicrophoneSlash className="w-5 h-5 text-white" /> // Show Slashed Mic when stopped
-                  )}
-                </button>
+
+            {showVisualizer && (
+              <div className="transition-opacity hover:opacity-80">
+                <AudioVisualizer
+                  stream={stream}
+                  isProcessing={isProcessing}
+                  isListening={isListening}
+                />
               </div>
+            )}
 
-              {showVisualizer && (
-                <div className="transition-opacity hover:opacity-80">
-                  <AudioVisualizer
-                    stream={stream}
-                    isProcessing={isProcessing}
-                    isListening={isListening}
-                  />
-                </div>
-              )}
-
-              {text && (
-                <div
-                  className="w-full max-w-2xl rounded-lg p-3 shadow-lg backdrop-blur-sm cursor-pointer hover:bg-white/5 overflow-y-auto max-h-40"
-                  onClick={() => copyToClipboard(text)}
-                  title="Click to copy"
-                >
-                  <p className="text-xs text-white select-none">{text}</p>
-                </div>
-              )}
-            </div>
+            {text && (
+              <div
+                className="w-full max-w-2xl rounded-lg p-3 shadow-lg backdrop-blur-sm cursor-pointer hover:bg-white/5 overflow-y-auto max-h-40"
+                onClick={() => copyToClipboard(text)}
+                title="Click to copy"
+              >
+                <p className="text-xs text-white select-none">{text}</p>
+              </div>
+            )}
           </div>
         </div>
       )}

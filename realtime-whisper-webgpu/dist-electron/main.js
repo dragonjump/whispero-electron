@@ -2,4 +2,4 @@
 require("electron");
 require("path");
 require("url");
-require("./main-BvTrhlMq.cjs");
+require("./main-B3rS0XVd.cjs");

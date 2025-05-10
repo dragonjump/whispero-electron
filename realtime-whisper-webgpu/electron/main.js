@@ -569,6 +569,13 @@ function createWindow() {
     }
   });
 
+  // Add fullscreen toggle handler
+  ipcMain.on('toggle-fullscreen', () => {
+    if (mainWindow && !mainWindow.isDestroyed()) {
+      mainWindow.setFullScreen(!mainWindow.isFullScreen());
+    }
+  });
+
   // Save window state on close
   mainWindow.on('close', () => {
     if (!mainWindow.isDestroyed()) {
