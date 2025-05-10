@@ -509,28 +509,18 @@ function App() {
         <div className="flex flex-col h-screen mx-auto text-gray-800 dark:text-gray-200">
           {/* New Header Bar */}
           <div className="flex-none rounded-t-xl overflow-hidden">
-            <div className="bg-gray-900 dark:bg-gray-900 text-white flex items-center justify-between px-2 py-1 app-region-drag select-none rounded-t-xl">
-              <div className="flex items-center gap-2 app-region-no-drag">
+            <div className="bg-gray-900 dark:bg-gray-900 text-white flex items-center justify-between px-2 py-1 -app-region-drag select-none rounded-t-xl">
+              <div className="flex items-center gap-2 -app-region-no-drag">
                 <WindowControls buttonSize="sm" onMaximizeClick={toggleFullScreen} />
               </div>
-              <div className=" ml-4 flex-1  flex justify-keft">
+              <div className="ml-4 flex-1 flex justify-left">
                 <span className="text-base font-semibold tracking-wide" style={{ fontSize: '0.75em' }}>
                   Whispero - Voice to Text
                 </span>
               </div>
-            </div>
-            {/* Separator */}
-            <div className="h-[2px] w-full bg-gray-700 dark:bg-gray-800 shadow" />
-          </div>
-
-          {/* Target Window Indicator */}
+              {/* Grouped language selector and icon buttons, right-aligned */}
+              <div className="flex items-center gap-2 app-region-no-drag">
           
-          <div className="w-24 scale-90 transform -translate-y-1 flex items-center gap-2 app-region-no-drag">
-                <LanguageSelector
-                  language={language}
-                  setLanguage={setLanguage}
-                  className="text-xs"
-                />
                 <button
                   onClick={toggleVisualizer}
                   className="text-gray-400 hover:text-gray-200 transition-colors text-base"
@@ -547,7 +537,20 @@ function App() {
                   <FaPaste className={`w-4 h-4 ${autoPasteEnabled ? 'text-green-500' : 'text-gray-500'}`} />
                 </button>
               </div>
-              
+            </div>
+            {/* Separator */}
+            <div className="h-[2px] w-full bg-gray-700 dark:bg-gray-800 shadow" />
+          </div>
+
+          {/* Remove the old floating language selector and icon buttons below the header */}
+          {/* Target Window Indicator */}
+          <div className="flex items-center ml-4 gap-2 app-region-no-drag">
+          <LanguageSelector
+                  language={language}
+                  setLanguage={setLanguage}
+                  className="text-xs"
+                />
+                </div>
           {autoPasteEnabled && targetWindow && (
             <div className="absolute top-12 right-4 bg-gray-800/50 backdrop-blur-sm rounded px-2 py-1 text-xs">
               Target: {targetWindow.title || 'No window selected'}
@@ -610,7 +613,7 @@ function App() {
             {/* Transcribed text area */}
             {text && (
               <div
-                className="w-full max-w-2xl bg-gray-50 dark:bg-dark-600 rounded-lg p-4 h-48 overflow-y-auto transition-colors shadow-inner custom-scrollbar"
+                className=" app-region-no-drag  w-full max-w-2xl bg-gray-50 dark:bg-dark-600 rounded-lg p-4 h-48 overflow-y-auto transition-colors shadow-inner custom-scrollbar"
                 style={{ fontFamily: 'inherit', fontSize: '1.08em' }}
                 onClick={() => copyToClipboard(text)}
                 title="Click to copy"
@@ -621,12 +624,21 @@ function App() {
                     key={idx}
                     className={
                       idx === 0
-                        ? 'text-gray-800 dark:text-dark-100 font-mono break-words'
-                        : 'text-gray-800 dark:text-dark-100 mt-2 break-words'
+                        ? ' -app-region-no-drag  text-gray-800 dark:text-dark-100 font-mono break-words'
+                        : ' -app-region-no-drag  text-gray-800 dark:text-dark-100 mt-2 break-words'
                     }
                   >
                     {para}
+                    <br/>dummydummydummydummydummydummy 
+                    <br/>dummydummydummydummydummydummy 
+                
+                    <br/>dummydummydummydummydummydummy 
+                    <br/>dummydummydummydummydummydummy 
+                    <br/>dummydummydummydummydummydummy 
+                    <br/>dummydummydummydummydummydummy 
+                    <br/>dummydummydummydummydummydummy 
                   </p>
+                
                 ))}
               </div>
             )}
