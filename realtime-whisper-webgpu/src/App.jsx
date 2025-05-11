@@ -492,7 +492,7 @@ function App() {
   };
 
   return (
-    <div className="h-screen bg-gray-900/80 rounded-xl overflow-hidden shadow-xl">
+    <div className="h-screen bg-gray-900/80 rounded-2xl overflow-hidden shadow-2xl">
       {status === "loading" ? (
         <div className="flex flex-col items-center justify-center h-full text-center px-4">
           <h1 className="text-2xl font-bold mb-2 text-white/90">WhisperO</h1>
