@@ -652,7 +652,7 @@ function App() {
 
       {/* Logo in bottom right corner */}
       <img
-        src="/whispero-logo.png"
+        src="whispero-logo.png"
         alt="Whispero Logo"
         className="fixed bottom-2 right-2 w-8 h-8 opacity-30 pointer-events-none"
       />

@@ -44,7 +44,7 @@
   "build": {
     "appId": "com.whispero.app",
     "productName": "Whispero",
-    "icon": "public/whispero-logo.png",
+    "icon": "public/whispero-logo.ico",
     "directories": {
       "output": "dist_electron"
     },
