@@ -22,7 +22,7 @@ export function WindowControls({ buttonSize = 'md', onMaximizeClick }) {
         <span className={iconSize}> </span>
       </button>
       <button
-        onClick={onMaximizeClick ? onMaximizeClick : () => ipcRenderer.send('maximize-window')}
+        onClick={() => ipcRenderer.send('maximize-window')}
         className={`${sizeClass} rounded-full bg-green-500 hover:bg-green-600 flex items-center justify-center text-white`}
         title="Maximize"
       >

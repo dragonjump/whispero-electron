@@ -496,20 +496,18 @@ async function checkActiveWindow() {
   }
 }
 
+const DEFAULT_WINDOW_WIDTH = 510;
+const DEFAULT_WINDOW_HEIGHT = 310;
+
 function createWindow() {
   if (mainWindow) {
     return;
   }
 
-
-
   // Restore window position and size
   const windowState = store.get('windowState', {
-    // width: 800,
-    // height: 600,
-    
-    width: 510,
-    height: 310,
+    width: DEFAULT_WINDOW_WIDTH,
+    height: DEFAULT_WINDOW_HEIGHT,
     x: undefined,
     y: undefined
   });
@@ -564,23 +562,40 @@ function createWindow() {
     }
   });
 
-  ipcMain.on('maximize-window', () => {
-    if (mainWindow && !mainWindow.isDestroyed()) {
-      if (mainWindow.isMaximized()) {
-        mainWindow.unmaximize();
-      } else {
-        mainWindow.maximize();
-      }
-    }
-  });
-
   ipcMain.on('close-window', () => {
     if (mainWindow && !mainWindow.isDestroyed()) {
       mainWindow.close();
     }
   });
 
-  // Add fullscreen toggle handler
+  // Maximize/restore logic
+  ipcMain.on('maximize-window', () => {
+    if (mainWindow && !mainWindow.isDestroyed()) {
+      if (!mainWindow.isMaximized()) {
+        previousWindowBounds = mainWindow.getBounds();
+        mainWindow.maximize();
+      } else {
+        if (previousWindowBounds) {
+          mainWindow.unmaximize();
+          mainWindow.setBounds(previousWindowBounds);
+        } else {
+          mainWindow.unmaximize();
+        }
+      }
+    }
+  });
+
+  // Optional: separate restore handler
+  ipcMain.on('restore-window', () => {
+    if (mainWindow && !mainWindow.isDestroyed()) {
+      if (mainWindow.isMaximized() && previousWindowBounds) {
+        mainWindow.unmaximize();
+        mainWindow.setBounds(previousWindowBounds);
+      }
+    }
+  });
+
+  // Keep fullscreen toggle as a separate handler
   ipcMain.on('toggle-fullscreen', () => {
     if (mainWindow && !mainWindow.isDestroyed()) {
       mainWindow.setFullScreen(!mainWindow.isFullScreen());
@@ -746,6 +761,20 @@ function createWindow() {
     pasteQueue.push({ text, event });
     processPasteQueue();
   });
+
+  // Always start unmaximized and at default size if maximized bounds were saved
+  mainWindow.once('ready-to-show', () => {
+    if (mainWindow.isMaximized()) {
+      mainWindow.unmaximize();
+      mainWindow.setBounds({ width: DEFAULT_WINDOW_WIDTH, height: DEFAULT_WINDOW_HEIGHT });
+    }
+    // If the window is larger than the screen (from a previous maximized state), reset
+    const { width, height } = mainWindow.getBounds();
+    const { width: screenW, height: screenH } = screen.getPrimaryDisplay().workAreaSize;
+    if (width > screenW || height > screenH) {
+      mainWindow.setBounds({ width: DEFAULT_WINDOW_WIDTH, height: DEFAULT_WINDOW_HEIGHT });
+    }
+  });
 }
 
 // Start the app when ready
@@ -810,3 +839,5 @@ processPasteQueue = async function() {
   lastProcessingTime = Date.now();
   return originalProcessPasteQueue.apply(this, arguments);
 };
+
+let previousWindowBounds = null;
