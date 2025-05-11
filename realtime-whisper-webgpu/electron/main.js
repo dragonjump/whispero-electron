@@ -774,6 +774,8 @@ function createWindow() {
     if (width > screenW || height > screenH) {
       mainWindow.setBounds({ width: DEFAULT_WINDOW_WIDTH, height: DEFAULT_WINDOW_HEIGHT });
     }
+    // Always center the window on startup
+    mainWindow.center();
   });
 }
 
