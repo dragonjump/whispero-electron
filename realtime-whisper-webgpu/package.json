@@ -1,7 +1,7 @@
 {
   "name": "realtime-webgpu",
   "private": true,
-  "version": "0.0.0",
+  "version": "0.9.6",
   "type": "module",
   "main": "electron/main.js",
   "scripts": {
@@ -44,7 +44,7 @@
   "build": {
     "appId": "com.whispero.app",
     "productName": "Whispero",
-    "icon": "public/whispero-logo.ico",
+    "icon": "public/whispero-logo",
     "directories": {
       "output": "dist_electron"
     },

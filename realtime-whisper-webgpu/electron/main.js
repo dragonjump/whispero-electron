@@ -523,7 +523,7 @@ function createWindow() {
     alwaysOnTop: true,
     opacity: 0.895,
     backgroundColor: '#00000000',
-    icon: path.join(__dirname, '../public/whispero-logo.ico'),
+    icon: path.join(__dirname, '../public/icons/whispero-logo.ico'),
     webPreferences: {
       nodeIntegration: true,
       contextIsolation: false,
@@ -561,6 +561,16 @@ function createWindow() {
   ipcMain.on('minimize-window', () => {
     if (mainWindow && !mainWindow.isDestroyed()) {
       mainWindow.minimize();
+    }
+  });
+
+  ipcMain.on('maximize-window', () => {
+    if (mainWindow && !mainWindow.isDestroyed()) {
+      if (mainWindow.isMaximized()) {
+        mainWindow.unmaximize();
+      } else {
+        mainWindow.maximize();
+      }
     }
   });
 
