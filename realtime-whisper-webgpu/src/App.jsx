@@ -492,7 +492,10 @@ function App() {
   };
 
   return (
-    <div className="h-screen bg-gray-900/80 rounded-2xl overflow-hidden shadow-2xl">
+    <div
+      className="h-screen rounded-2xl overflow-hidden shadow-2xl"
+      style={{ background: 'rgba(24,24,27,0.97)' }}
+    >
       {status === "loading" ? (
         <div className="flex flex-col items-center justify-center h-full text-center px-4">
           <h1 className="text-2xl font-bold mb-2 text-white/90">WhisperO</h1>
