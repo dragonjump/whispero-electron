@@ -6,7 +6,8 @@ import {
   full,
 } from "@huggingface/transformers";
 
-const MAX_NEW_TOKENS = 64;
+const MAX_NEW_TOKENS = 128;
+// const MAX_NEW_TOKENS = 64;
 
 /**
  * This class uses the Singleton pattern to ensure that only one instance of the model is loaded.

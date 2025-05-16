@@ -47,7 +47,7 @@ const DEBUG_WINDOW_TRACKING = true;
 const clipboardQueue = [];
 let isProcessingClipboard = false;
 const MAX_RETRIES = 3;
-const RETRY_DELAY = 100; // ms
+const RETRY_DELAY = 10 *1000; // ms
 
 // Configure key sender
 // ks.setOption('globalDelayPressMillisec', 100);
@@ -80,9 +80,9 @@ async function simulatePaste() {
       
       // First do Ctrl+A to select all
       console.log('[Paste Debug] Selecting all text (Ctrl+A)');
-      await keyboard.pressKey(Key.LeftControl);
-      await keyboard.type('a');
-      await keyboard.releaseKey(Key.LeftControl);
+      // await keyboard.pressKey(Key.LeftControl);
+      // await keyboard.type('a');
+      // await keyboard.releaseKey(Key.LeftControl);
       
       // Small delay between operations
       await new Promise(resolve => setTimeout(resolve, 50));

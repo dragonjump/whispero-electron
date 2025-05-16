@@ -305,7 +305,8 @@ function App() {
             return;
           }
 
-          setText(newText);
+          // Append new transcription to the existing text
+          setText(prev => (prev ? prev + "\n" + newText : newText));
           setIsProcessing(false);
 
           // Copy text and handle result
@@ -626,27 +627,62 @@ function App() {
 
             {/* Transcribed text area */}
             {text && (
-              <div
-                className="app-region-no-drag w-full max-w-2xl bg-gray-50 dark:bg-dark-600 rounded-lg p-4 h-48 overflow-y-auto transition-colors shadow-inner custom-scrollbar transcribed-scrollbar"
-                style={{ fontFamily: 'inherit', fontSize: '1.08em' }}
-                tabIndex={0}
-                ref={transcribedRef}
-                onClick={() => copyToClipboard(text)}
-                title="Click to copy"
-              >
-                {/* Split text into paragraphs for better styling */}
-                {(typeof text === 'string' ? text : String(text || '')).split(/\n+/).map((para, idx) => (
-                  <p
-                    key={idx}
-                    className={
-                      idx === 0
-                        ? ' -app-region-no-drag  text-gray-800 dark:text-dark-100 font-mono break-words'
-                        : ' -app-region-no-drag  text-gray-800 dark:text-dark-100 mt-2 break-words'
-                    }
+              <div className="w-full max-w-2xl">
+                <div
+                  className="app-region-no-drag bg-gray-50 dark:bg-dark-600 rounded-lg p-4 h-48 overflow-y-auto transition-colors shadow-inner custom-scrollbar transcribed-scrollbar"
+                  style={{ fontFamily: 'inherit', fontSize: '1.08em' }}
+                  tabIndex={0}
+                  ref={transcribedRef}
+                  title="Click to copy"
+                >
+                  {/* Split text into paragraphs for better styling */}
+                  {(typeof text === 'string' ? text : String(text || '')).split(/\n+/).map((para, idx) => (
+                    <p
+                      key={idx}
+                      className={
+                        idx === 0
+                          ? ' -app-region-no-drag  text-gray-800 dark:text-dark-100 font-mono break-words'
+                          : ' -app-region-no-drag  text-gray-800 dark:text-dark-100 mt-2 break-words'
+                      }
+                    >
+                      {para}
+                    </p>
+                  ))}
+                </div>
+                {/* Copy, Save, and Clear buttons */}
+                <div className="flex justify-end gap-2 mt-2 items-center">
+                  <button
+                    className="bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700 text-gray-500 dark:text-gray-300 px-2 py-1 rounded text-xs font-medium mr-auto"
+                    onClick={() => setText("")}
+                    title="Clear transcript"
                   >
-                    {para}
-                  </p>
-                ))}
+                    Clear
+                  </button>
+                  <button
+                    className="bg-gray-200 dark:bg-gray-700 hover:bg-gray-300 dark:hover:bg-gray-600 text-gray-800 dark:text-gray-100 px-4 py-2 rounded transition-colors text-sm font-medium"
+                    onClick={() => copyToClipboard(text)}
+                  >
+                    Copy
+                  </button>
+                  <button
+                    className="bg-indigo-500 hover:bg-indigo-600 text-white px-4 py-2 rounded transition-colors text-sm font-medium"
+                    onClick={() => {
+                      const blob = new Blob([text], { type: 'text/plain' });
+                      const url = URL.createObjectURL(blob);
+                      const a = document.createElement('a');
+                      a.href = url;
+                      a.download = 'whispero-transcript.txt';
+                      document.body.appendChild(a);
+                      a.click();
+                      setTimeout(() => {
+                        document.body.removeChild(a);
+                        URL.revokeObjectURL(url);
+                      }, 0);
+                    }}
+                  >
+                    Save
+                  </button>
+                </div>
               </div>
             )}
           </div>
