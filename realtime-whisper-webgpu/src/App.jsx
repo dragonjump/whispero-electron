@@ -144,7 +144,7 @@ function App() {
   const [tps, setTps] = useState(null);
   const [language, setLanguage] = useState("en");
   const [lastCopyTime, setLastCopyTime] = useState(0);
-  const COPY_COOLDOWN = 2100; // 300ms cooldown
+  const COPY_COOLDOWN = 350; // 300ms cooldown
 
   // Processing
   const [recording, setRecording] = useState(false);

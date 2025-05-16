@@ -6,7 +6,7 @@ import {
   full,
 } from "@huggingface/transformers";
 
-const MAX_NEW_TOKENS = 128;
+const MAX_NEW_TOKENS = 77;
 // const MAX_NEW_TOKENS = 64;
 
 /**

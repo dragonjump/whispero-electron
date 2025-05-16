@@ -47,14 +47,14 @@ const DEBUG_WINDOW_TRACKING = true;
 const clipboardQueue = [];
 let isProcessingClipboard = false;
 const MAX_RETRIES = 3;
-const RETRY_DELAY = 10 *1000; // ms
+const RETRY_DELAY = 2 *1000; // ms
 
 // Configure key sender
 // ks.setOption('globalDelayPressMillisec', 100);
 // ks.setOption('globalDelayBetweenMillisec', 50);
 
 // Configure nut.js for better performance
-keyboard.config.autoDelayMs = 0;
+keyboard.config.autoDelayMs = 100;
 
 // Add paste functionality
 async function simulatePaste() {
