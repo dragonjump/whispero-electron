@@ -6,7 +6,8 @@ import {
   full,
 } from "@huggingface/transformers";
 
-const MAX_NEW_TOKENS = 77;
+// const MAX_NEW_TOKENS = 77; 
+const MAX_NEW_TOKENS =128;  
 // const MAX_NEW_TOKENS = 64;
 
 /**
@@ -164,8 +165,10 @@ async function generate({ audio, language }) {
       language,
       num_beams: 1,  // Reduce beam search complexity
       do_sample: false,
-      temperature: 1.0,
-      top_k: 50,
+      temperature: .3,
+      top_k: 20,
+      // temperature: 1.0,
+      // top_k: 50,
       use_cache: true,
       pad_token_id: tokenizer.pad_token_id,
       eos_token_id: tokenizer.eos_token_id,

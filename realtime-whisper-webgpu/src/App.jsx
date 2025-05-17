@@ -161,6 +161,12 @@ function App() {
   const [pasteStatus, setPasteStatus] = useState(null);
 
   const transcribedRef = useRef(null);
+  const textRef = useRef(text);
+
+  // Keep textRef updated with the latest text
+  useEffect(() => {
+    textRef.current = text;
+  }, [text]);
 
   // Update copyToClipboard function
   const copyToClipboard = async (textToCopy) => {
@@ -296,17 +302,36 @@ function App() {
           setTps(tps);
           break;
         case "complete":
-          const newText = e.data.output;
+          // Always treat output as array and join to string
+          const newTextArr = e.data.output;
+          const newText = Array.isArray(newTextArr) ? newTextArr.join(' ').trim() : (newTextArr || '').trim();
 
           // Don't update if text hasn't changed
-          if (newText === text) {
+          const currentText = textRef.current;
+          console.log('[Text Debug] newText:', newText);
+          console.log('[Text Debug] text:', currentText);
+          if (newText === currentText) {
             console.log('[Text Debug] Text unchanged, skipping update');
             setIsProcessing(false);
             return;
           }
 
+          if (typeof currentText === 'string' && currentText.includes(newText)) {
+            console.log('[Text Debug] Text unchanged, skipping update');
+            setIsProcessing(false);
+            return;
+          }
+          const safeNewText = newText.toLowerCase().trim();
+          const safeOldText = (typeof currentText === 'string' ? currentText : '').toLowerCase().trim();
+          if (safeOldText.indexOf(safeNewText) > -1) {
+            console.log('[Text Debug] Same match found, skipping update');
+            setIsProcessing(false);
+            return;
+          }
           // Append new transcription to the existing text
-          setText(prev => (prev ? prev + "\n" + newText : newText));
+            setText(prev => (prev ? prev + "\n" + newText : newText));
+          // setText( newText);
+
           setIsProcessing(false);
 
           // Copy text and handle result
