@@ -162,7 +162,6 @@ function App() {
 
   const transcribedRef = useRef(null);
   const textRef = useRef(text);
-  const lastSetTextTimeRef = useRef(0);
 
   // Keep textRef updated with the latest text
   useEffect(() => {
@@ -329,31 +328,18 @@ function App() {
             setIsProcessing(false);
             return;
           }
-
-          // Use timestamp logic for setText
-          const now = Date.now();
-          let textDesc = newText
-          if (now - lastSetTextTimeRef.current < 500) {
-            // If within 3 seconds, replace textground.
-            console.log('less miliseconds');
-            // setText(textDesc);
-          } else {
-            console.log('more miliseconds');
-            // If more than 3 seconds, append
-            textDesc = (text ? text + "\n" + newText : newText)
-          }
-          // setText(textDesc);
-          setText((prev) => prev + "\n\n\n" + newText);
-          lastSetTextTimeRef.current = now;
+          // Append new transcription to the existing text
+            setText(prev => (prev ? prev + "\n" + newText : newText));
+          // setText( newText);
 
           setIsProcessing(false);
 
           // Copy text and handle result
-          const copySuccess = await copyToClipboard(textDesc);
+          const copySuccess = await copyToClipboard(newText);
           if (copySuccess && window.electron) {
           }
-          if (textDesc) {
-            ipcRenderer.send('text-recognized', textDesc);
+          if (newText) {
+            ipcRenderer.send('text-recognized', newText);
           }
           break;
         case "error":
