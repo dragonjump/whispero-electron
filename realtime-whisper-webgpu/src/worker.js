@@ -15,6 +15,7 @@ const MAX_NEW_TOKENS =128;
  */
 class AutomaticSpeechRecognitionPipeline {
   static model_id = "onnx-community/whisper-base";
+  // static model_id = "onnx-community/whisper-large-v3-ONNX
   static tokenizer = null;
   static processor = null;
   static model = null;
@@ -88,6 +89,8 @@ class AutomaticSpeechRecognitionPipeline {
 }
 
 let processing = false;
+let lastCompleteSent = 0; // Timestamp of last 'complete' sent
+const COMPLETE_DEBOUNCE_MS =50; // 3 seconds
 
 // Handle messages from the main thread
 self.onmessage = async (e) => {
@@ -96,7 +99,7 @@ self.onmessage = async (e) => {
   try {
     switch (type) {
       case 'load':
-        // Initialize the pipeline
+        // Initialize the pipeShe sells them for about five dollars. They're popular in foreign snacks, we thought they were gifts, and they're simple treats. (speaking in foreign language) - It's a long story. (speaking in foreign language) - It turns a simple idea to be steady in food meets. - So I don't? - Using just a set of dough. - I think they're expensive. - I think so. - It's the best. - It's the best. - It's the best.line
         await AutomaticSpeechRecognitionPipeline.getInstance((progress) => {
           self.postMessage(progress);
         });
@@ -180,10 +183,18 @@ async function generate({ audio, language }) {
       clean_up_tokenization_spaces: true
     });
 
-    self.postMessage({
-      status: "complete",
-      output: decoded,
-    });
+    // Debounce: only send if 3s have passed since last sent
+    const now = Date.now();
+    if (now - lastCompleteSent >= COMPLETE_DEBOUNCE_MS) {
+      self.postMessage({
+        status: "complete",
+        output: decoded,
+      });
+      lastCompleteSent = now;
+    } else {
+      // Optionally, you can log or ignore
+      // console.log('Debounced complete event');
+    }
   } catch (error) {
     console.error("Processing error:", error);
     self.postMessage({

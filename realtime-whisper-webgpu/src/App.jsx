@@ -131,7 +131,9 @@ function DebugPanel({ targetWindow, isAutoPasteEnabled, pasteStatus, toggleAutoP
 function App() {
   // Create a reference to the worker object.
   const worker = useRef(null);
+  const workerSmol = useRef(null);
   const recorderRef = useRef(null);
+  const smolReadyRef = useRef(false);
 
   // Model loading and progress
   const [status, setStatus] = useState(null);
@@ -252,6 +254,7 @@ function App() {
 
   // Initialize worker immediately
   useEffect(() => {
+
     if (!worker.current) {
       worker.current = new Worker(new URL("./worker.js", import.meta.url), {
         type: "module",
@@ -262,6 +265,38 @@ function App() {
       worker.current.postMessage({ type: 'load' });
     }
   }, []);
+
+  // useEffect(() => {
+  //   if (!workerSmol.current) {
+  //     workerSmol.current = new Worker(new URL("./smol-worker.js", import.meta.url), {
+  //       type: "module",
+  //     });
+  //     smolReadyRef.current = false;
+  //     // Listen for status/log messages
+  //     workerSmol.current.onmessage = (event) => {
+  //       const { status, log, output, error } = event.data;
+  //       if (status === 'ready') {
+  //         smolReadyRef.current = true;
+  //         console.log('[smol-worker] Ready');
+  //         // Now safe to send input
+  //         // workerSmol.current.postMessage({ input: 'Once upon a time...' });
+  //       } else if (status === 'loading') {
+  //         console.log('[smol-worker] Loading...');
+  //       } else if (status === 'error') {
+  //         console.error('[smol-worker] Error:', event.data.error);
+  //       } else if (status === 'log') {
+  //         console.log('[smol-worker]', log);
+  //       } else if (output) {
+  //         setText(output);
+  //         console.log('Generated Text:', output);
+  //       } else if (error) {
+  //         console.error('[smol-worker] Error:', error);
+  //       }
+  //     };
+  //     // Start loading the model
+  //     workerSmol.current.postMessage({ type: 'load' });
+  //   }
+  // }, []);
 
   // Setup worker message handlers
   const setupWorkerHandlers = () => {
@@ -329,7 +364,7 @@ function App() {
             return;
           }
           // Append new transcription to the existing text
-            setText(prev => (prev ? prev + "\n" + newText : newText));
+          setText(prev => (prev ? prev + "\n\n\n[new-sentence]\n\n\n" + newText : newText));
           // setText( newText);
 
           setIsProcessing(false);
@@ -517,6 +552,62 @@ function App() {
     }
   };
 
+  // const handleAIClean = () => {
+  //   toggleListening();
+  //   if (workerSmol.current && smolReadyRef.current) {
+  //     workerSmol.current.postMessage({ input: `Summarize the following transcript. Remove duplicate or repeated sentences, and make the text concise and clear.\n\nTranscript:\n${text}\n\nSummary:` });
+  //   } else {
+  //     console.warn('smol-worker not ready');
+  //   }
+  // };
+
+  const workerQwen3 = useRef(null);
+  const qwen3ReadyRef = useRef(false);
+  const [isQwen3Loading, setIsQwen3Loading] = useState(false);
+
+  useEffect(() => {
+    if (!workerQwen3.current) {
+      workerQwen3.current = new Worker(new URL("./qwen3-worker.js", import.meta.url), {
+        type: "module",
+      });
+      qwen3ReadyRef.current = false;
+      workerQwen3.current.onmessage = (event) => {
+        const { status, log, output, error } = event.data;
+        if (status === 'ready') {
+          qwen3ReadyRef.current = true;
+          console.log('[qwen3-worker] Ready');
+        } else if (status === 'loading') {
+          console.log('[qwen3-worker] Loading...');
+        } else if (status === 'error') {
+          setIsQwen3Loading(false);
+          console.error('[qwen3-worker] Error:', event.data.error);
+        } else if (status === 'log') {
+          console.log('[qwen3-worker]', log);
+        } else if (output) {
+          setIsQwen3Loading(false);
+          console.log('Qwen3 Output:', output);
+          setText(output);
+          
+        } else if (error) {
+          setIsQwen3Loading(false);
+          console.error('[qwen3-worker] Error:', error);
+        }
+      };
+      // Start loading the model
+      workerQwen3.current.postMessage({ type: 'load' });
+    }
+  }, []);
+
+  const handleQwen3 = () => {
+    toggleListening();
+    if (workerQwen3.current && qwen3ReadyRef.current) {
+      setIsQwen3Loading(true);
+      workerQwen3.current.postMessage({ input: `\n\nTranscript:\n${text}\n` });
+    } else {
+      console.warn('qwen3-worker not ready');
+    }
+  };
+
   return (
     <div
       className="h-screen rounded-2xl overflow-hidden shadow-2xl"
@@ -681,8 +772,25 @@ function App() {
                     onClick={() => setText("")}
                     title="Clear transcript"
                   >
+
                     Clear
                   </button>
+
+                  <button
+                    className="bg-purple-500 hover:bg-purple-600 text-white px-4 py-2 rounded transition-colors text-sm font-medium"
+                    onClick={handleQwen3}
+                  >
+                   ✨ CONDENSE
+                  </button>
+                  {isQwen3Loading && (
+                    <span className="ml-2 animate-spin inline-block align-middle">
+                      <svg className="w-5 h-5 text-purple-500" fill="none" viewBox="0 0 24 24">
+                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8z"></path>
+                      </svg>
+                    </span>
+                  )}
+
                   <button
                     className="bg-gray-200 dark:bg-gray-700 hover:bg-gray-300 dark:hover:bg-gray-600 text-gray-800 dark:text-gray-100 px-4 py-2 rounded transition-colors text-sm font-medium"
                     onClick={() => copyToClipboard(text)}
@@ -707,6 +815,13 @@ function App() {
                   >
                     Save
                   </button>
+                  {/* <button
+                    className="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded transition-colors text-sm font-medium"
+                    onClick={handleAIClean}
+                  >
+                     Summarize
+                  </button> */}
+               
                 </div>
               </div>
             )}
