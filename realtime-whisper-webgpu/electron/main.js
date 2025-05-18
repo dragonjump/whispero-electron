@@ -34,8 +34,21 @@ app.commandLine.appendSwitch('ignore-gpu-blocklist');
 app.commandLine.appendSwitch('enable-zero-copy');
 
 // Set memory limits for WebGPU
-app.commandLine.appendSwitch('gpu-memory-buffer-pool-size', '1024');
-app.commandLine.appendSwitch('shared-memory-size', '1024');
+app.commandLine.appendSwitch('gpu-memory-buffer-pool-size', '2048');
+app.commandLine.appendSwitch('shared-memory-size', '2048');
+app.commandLine.appendSwitch('enable-gpu-rasterization');
+app.commandLine.appendSwitch('ignore-gpu-blacklist');
+app.commandLine.appendSwitch('force_high_performance_gpu');
+app.commandLine.appendSwitch('disable-gpu-driver-bug-workarounds'); // Avoid unnecessary driver workarounds
+app.commandLine.appendSwitch('enable-native-gpu-memory-buffer'); // Use native GP
+app.commandLine.appendSwitch('enable-webgpu-developer-features');
+app.commandLine.appendSwitch('enable-gpu-debugging');
+app.commandLine.appendSwitch('enable-zero-copy');
+app.commandLine.appendSwitch('enable-gpu-rasterization');
+app.commandLine.appendSwitch('disable-software-rasterizer'); // Prevent fallback to CPU ren
+app.commandLine.appendSwitch('disable-gpu-process-crash-limit'); // Avoid unnecessary GPU process restarts
+app.commandLine.appendSwitch('disable-backgrounding-occluded-windows'); // Reduce GPU load for hidden windowsdering
+// U memory buffers
 
 // Add debug mode
 const DEBUG_MODE = process.env.NODE_ENV === 'development';
@@ -512,6 +525,8 @@ function createWindow() {
     y: undefined
   });
 
+ 
+  
   // Prepare browser window options
   const browserWindowOptions = {
     width: windowState.width,
@@ -530,7 +545,8 @@ function createWindow() {
       enableWebGPU: true,
       sharedArrayBuffers: true,
       v8CacheOptions: 'none',
-      backgroundThrottling: false
+      backgroundThrottling: false,
+      // offscreen: true
     }
   };
 

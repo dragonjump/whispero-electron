@@ -1,4 +1,4 @@
-import { pipeline, TextStreamer,InterruptableStoppingCriteria } from "@huggingface/transformers";
+import { pipeline, TextStreamer, InterruptableStoppingCriteria } from "@huggingface/transformers";
 
 let tokenizer = null;
 let model = null;
@@ -29,7 +29,9 @@ const loadPipeline = async () => {
       "text-generation",
       "onnx-community/Qwen3-0.6B-ONNX",
       { dtype: "q4f16" }
-      // { dtype: "fp32" }
+    
+      // { dtype: "q8" }
+      //   { dtype: "fp16" }
     );
     tokenizer = pipe.tokenizer;
     model = pipe.model;
@@ -45,7 +47,7 @@ const loadPipeline = async () => {
 
 const stopping_criteria = new InterruptableStoppingCriteria();
 let past_key_values_cache = null;
-let reasonEnabled  =false;
+let reasonEnabled = false;
 const handleMessage = async (event) => {
   const { input } = event.data;
   if (!input) {
@@ -56,7 +58,7 @@ const handleMessage = async (event) => {
   try {
     log('Qwen3 generating for input:', input);
     const messages = [
-      { role: "system", content: "You are expert transcriber. Only remove duplicate or repeated sentences.  Do not add, invent, or explain anything. Do not reason or interpret. Just output the cleaned transcript." },
+      { role: "system", content: "You are expert transcriptionist. When you see similar sentences, only keep the latest one of them. " },
       { role: "user", content: input },
     ];
     const [START_THINKING_TOKEN_ID, END_THINKING_TOKEN_ID] = tokenizer.encode(
@@ -109,19 +111,22 @@ const handleMessage = async (event) => {
 
     // Tell the main thread we are starting
     self.postMessage({ status: "start" });
+    const start = performance.now();
 
     const { past_key_values, sequences } = await model.generate({
       ...inputs,
       past_key_values: past_key_values_cache,
       do_sample: true,
-      top_k: 20,
-      temperature: reasonEnabled ? 0.6 : 0.2,
-      max_new_tokens: 16384,
+      top_k: 50,
+      temperature: reasonEnabled ? 0.3 : 0.1,
+      // max_new_tokens: 16384,
+      max_new_tokens: 50,
       streamer,
       stopping_criteria,
       return_dict_in_generate: true,
     });
     past_key_values_cache = past_key_values;
+    console.log("Generation time:", performance.now() - start);
 
     // Decode only the answer tokens
     const answerText = tokenizer.decode(answerTokens, { skip_special_tokens: true });

@@ -239,6 +239,19 @@ function App() {
   };
 
   // Function to toggle listening state
+  const toggleListeningSwitchOff = (isOff) => {
+    if (isOff) {
+      // Stop listening
+      recorderRef.current?.stop();
+      stream?.getTracks().forEach(track => track.enabled = false);
+      setIsListening(false);
+    } else {
+      // Start listening
+      stream?.getTracks().forEach(track => track.enabled = true);
+      recorderRef.current?.start();
+      setIsListening(true);
+    }
+  };
   const toggleListening = () => {
     if (isListening) {
       // Stop listening
@@ -364,7 +377,7 @@ function App() {
             return;
           }
           // Append new transcription to the existing text
-          setText(prev => (prev ? prev + "\n\n\n[new-sentence]\n\n\n" + newText : newText));
+          setText(prev => (prev ? prev + "\n\n\n<----->\n\n\n" + newText : newText));
           // setText( newText);
 
           setIsProcessing(false);
@@ -564,6 +577,7 @@ function App() {
   const workerQwen3 = useRef(null);
   const qwen3ReadyRef = useRef(false);
   const [isQwen3Loading, setIsQwen3Loading] = useState(false);
+  const [isQwen3Initialized, setIsQwen3Initialized] = useState(false);
 
   useEffect(() => {
     if (!workerQwen3.current) {
@@ -571,10 +585,11 @@ function App() {
         type: "module",
       });
       qwen3ReadyRef.current = false;
-      workerQwen3.current.onmessage = (event) => {
+      workerQwen3.current.onmessage = async (event) => {
         const { status, log, output, error } = event.data;
         if (status === 'ready') {
           qwen3ReadyRef.current = true;
+          setIsQwen3Initialized(true);
           console.log('[qwen3-worker] Ready');
         } else if (status === 'loading') {
           console.log('[qwen3-worker] Loading...');
@@ -583,11 +598,19 @@ function App() {
           console.error('[qwen3-worker] Error:', event.data.error);
         } else if (status === 'log') {
           console.log('[qwen3-worker]', log);
-        } else if (output) {
+        } else if (status === 'complete') {
+          // if (output) {
           setIsQwen3Loading(false);
           console.log('Qwen3 Output:', output);
           setText(output);
-          
+          // Copy text and handle result
+          const copySuccess = await copyToClipboard(output);
+          if (copySuccess && window.electron) {
+          }
+          if (output) {
+            ipcRenderer.send('text-recognized', output);
+          }
+
         } else if (error) {
           setIsQwen3Loading(false);
           console.error('[qwen3-worker] Error:', error);
@@ -599,7 +622,7 @@ function App() {
   }, []);
 
   const handleQwen3 = () => {
-    toggleListening();
+    toggleListeningSwitchOff(true);
     if (workerQwen3.current && qwen3ReadyRef.current) {
       setIsQwen3Loading(true);
       workerQwen3.current.postMessage({ input: `\n\nTranscript:\n${text}\n` });
@@ -744,6 +767,21 @@ function App() {
             {/* Transcribed text area */}
             {text && (
               <div className="w-full max-w-2xl">
+                {!isQwen3Loading && isQwen3Initialized && (
+                  <button
+                    className="right-2 hover:bg-purple-600 text-white px-4 py-2 rounded transition-colors text-sm font-medium"
+                    onClick={handleQwen3}
+                  >
+                    ✨
+                  </button>)}
+                {isQwen3Loading && isQwen3Initialized  && (
+                  <span className="ml-2 animate-spin inline-block align-middle">
+                    <svg className="w-5 h-5 text-purple-500" fill="none" viewBox="0 0 24 24">
+                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8z"></path>
+                    </svg>
+                  </span>
+                )}
                 <div
                   className="app-region-no-drag bg-gray-50 dark:bg-dark-600 rounded-lg p-4 h-48 overflow-y-auto transition-colors shadow-inner custom-scrollbar transcribed-scrollbar"
                   style={{ fontFamily: 'inherit', fontSize: '1.08em' }}
@@ -776,20 +814,7 @@ function App() {
                     Clear
                   </button>
 
-                  <button
-                    className="bg-purple-500 hover:bg-purple-600 text-white px-4 py-2 rounded transition-colors text-sm font-medium"
-                    onClick={handleQwen3}
-                  >
-                   ✨ CONDENSE
-                  </button>
-                  {isQwen3Loading && (
-                    <span className="ml-2 animate-spin inline-block align-middle">
-                      <svg className="w-5 h-5 text-purple-500" fill="none" viewBox="0 0 24 24">
-                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8z"></path>
-                      </svg>
-                    </span>
-                  )}
+
 
                   <button
                     className="bg-gray-200 dark:bg-gray-700 hover:bg-gray-300 dark:hover:bg-gray-600 text-gray-800 dark:text-gray-100 px-4 py-2 rounded transition-colors text-sm font-medium"
@@ -821,7 +846,7 @@ function App() {
                   >
                      Summarize
                   </button> */}
-               
+
                 </div>
               </div>
             )}
