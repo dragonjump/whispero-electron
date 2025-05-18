@@ -165,6 +165,13 @@ function App() {
   const transcribedRef = useRef(null);
   const textRef = useRef(text);
 
+  // Auto-scroll transcribed text area to bottom on text update
+  useEffect(() => {
+    if (transcribedRef.current) {
+      transcribedRef.current.scrollTop = transcribedRef.current.scrollHeight;
+    }
+  }, [text]);
+
   // Keep textRef updated with the latest text
   useEffect(() => {
     textRef.current = text;
@@ -342,7 +349,7 @@ function App() {
         case "ready":
           setStatus("ready");
           recorderRef.current?.start();
-          console.log('[Worker Debug] Ready');
+          // console.log('[Worker Debug] Ready');
           break;
         case "start":
           setIsProcessing(true);
@@ -352,6 +359,7 @@ function App() {
         case "update":
           const { tps } = e.data;
           setTps(tps);
+          console.log('[Worker Debug] update tps', tps);
           break;
         case "complete":
           // Always treat output as array and join to string
@@ -380,18 +388,19 @@ function App() {
             setIsProcessing(false);
             return;
           }
+          const combinedText = currentText + "\n\n\n--------------\n\n\n" + newText;
           // Append new transcription to the existing text
-        await setText(prev => (prev ? prev + "\n\n\n<----->\n\n\n" + newText : newText));
+          await setText(combinedText);
           // setText( newText);
 
           setIsProcessing(false);
 
           // Copy text and handle result
-          const copySuccess = await copyToClipboard(text);
+          const copySuccess = await copyToClipboard(combinedText);
           if (copySuccess && window.electron) {
           }
-          if (text) {
-            ipcRenderer.send('text-recognized', text);
+          if (combinedText) {
+            ipcRenderer.send('text-recognized', combinedText);
           }
           break;
         case "error":
@@ -568,21 +577,15 @@ function App() {
       ipcRenderer.send('toggle-fullscreen');
     }
   };
-
-  // const handleAIClean = () => {
-  //   toggleListening();
-  //   if (workerSmol.current && smolReadyRef.current) {
-  //     workerSmol.current.postMessage({ input: `Summarize the following transcript. Remove duplicate or repeated sentences, and make the text concise and clear.\n\nTranscript:\n${text}\n\nSummary:` });
-  //   } else {
-  //     console.warn('smol-worker not ready');
-  //   }
-  // };
+ 
 
   // Qwen3 worker state
   const workerQwen3 = useRef(null);
   const qwen3ReadyRef = useRef(false);
   const [isQwen3Loading, setIsQwen3Loading] = useState(false);
   const [isQwen3Initialized, setIsQwen3Initialized] = useState(false);
+  const [qwen3ProgressItems, setQwen3ProgressItems] = useState([]);
+  const [qwen3OutputStream, setQwen3OutputStream] = useState('');
 
   // Gemma3 worker state
   const workerGemma3 = useRef(null);
@@ -601,25 +604,53 @@ function App() {
         if (status === 'ready') {
           qwen3ReadyRef.current = true;
           setIsQwen3Initialized(true);
+          setQwen3ProgressItems([]);
+          setIsQwen3Loading(false);
           console.log('[qwen3-worker] Ready');
         } else if (status === 'loading') {
+          setIsQwen3Loading(true);
+          setQwen3ProgressItems([]);
           console.log('[qwen3-worker] Loading...');
+        } else if (status === 'progress') {
+          setQwen3ProgressItems(prev => {
+            // Update or add the progress item by file
+            const idx = prev.findIndex(item => item.file === event.data.file);
+            let updated;
+            if (idx !== -1) {
+              updated = [...prev];
+              updated[idx] = { ...updated[idx], ...event.data };
+            } else {
+              updated = [...prev, event.data];
+            }
+            console.log('[Qwen3 Progress Debug] prev:', prev, 'new:', updated);
+            return updated;
+          });
         } else if (status === 'error') {
           setIsQwen3Loading(false);
+          setQwen3ProgressItems([]);
           console.error('[qwen3-worker] Error:', event.data.error);
         } else if (status === 'log') {
           console.log('[qwen3-worker]', log);
+        } else if (status === 'update') {
+   
+          console.log('Qwen3 buffering Output:', output);
+          setQwen3OutputStream(prev => prev + " " + output);  
+      
         } else if (status === 'complete') {
+          setQwen3OutputStream('' ); 
+        
           setIsQwen3Loading(false);
+          setQwen3ProgressItems([]);
           console.log('Qwen3 Output:', output);
           setText(output);
           const copySuccess = await copyToClipboard(output);
-          if (copySuccess && window.electron) {}
+          if (copySuccess && window.electron) { }
           if (output) {
             ipcRenderer.send('text-recognized', output);
           }
         } else if (error) {
           setIsQwen3Loading(false);
+          setQwen3ProgressItems([]);
           console.error('[qwen3-worker] Error:', error);
         }
       };
@@ -627,38 +658,38 @@ function App() {
     }
     // Gemma3 worker init
     if (!workerGemma3.current) {
-      workerGemma3.current = new Worker(new URL("./gemma3-worker.js", import.meta.url), {
-        type: "module",
-      });
-    //   gemma3ReadyRef.current = false;
-    //   workerGemma3.current.onmessage = async (event) => {
-    //     const { status, log, output, error } = event.data;
-    //     if (status === 'ready') {
-    //       gemma3ReadyRef.current = true;
-    //       setIsGemma3Initialized(true);
-    //       console.log('[gemma3-worker] Ready');
-    //     } else if (status === 'loading') {
-    //       console.log('[gemma3-worker] Loading...');
-    //     } else if (status === 'error') {
-    //       setIsGemma3Loading(false);
-    //       console.error('[gemma3-worker] Error:', event.data.error);
-    //     } else if (status === 'log') {
-    //       console.log('[gemma3-worker]', log);
-    //     } else if (status === 'complete') {
-    //       setIsGemma3Loading(false);
-    //       console.log('Gemma3 Output:', output);
-    //       setText(output);
-    //       const copySuccess = await copyToClipboard(output);
-    //       if (copySuccess && window.electron) {}
-    //       if (output) {
-    //         ipcRenderer.send('text-recognized', output);
-    //       }
-    //     } else if (error) {
-    //       setIsGemma3Loading(false);
-    //       console.error('[gemma3-worker] Error:', error);
-    //     }
-    //   };
-    //   workerGemma3.current.postMessage({ type: 'load' });
+      // workerGemma3.current = new Worker(new URL("./gemma3-worker.js", import.meta.url), {
+      //   type: "module",
+      // });
+      //   gemma3ReadyRef.current = false;
+      //   workerGemma3.current.onmessage = async (event) => {
+      //     const { status, log, output, error } = event.data;
+      //     if (status === 'ready') {
+      //       gemma3ReadyRef.current = true;
+      //       setIsGemma3Initialized(true);
+      //       console.log('[gemma3-worker] Ready');
+      //     } else if (status === 'loading') {
+      //       console.log('[gemma3-worker] Loading...');
+      //     } else if (status === 'error') {
+      //       setIsGemma3Loading(false);
+      //       console.error('[gemma3-worker] Error:', event.data.error);
+      //     } else if (status === 'log') {
+      //       console.log('[gemma3-worker]', log);
+      //     } else if (status === 'complete') {
+      //       setIsGemma3Loading(false);
+      //       console.log('Gemma3 Output:', output);
+      //       setText(output);
+      //       const copySuccess = await copyToClipboard(output);
+      //       if (copySuccess && window.electron) {}
+      //       if (output) {
+      //         ipcRenderer.send('text-recognized', output);
+      //       }
+      //     } else if (error) {
+      //       setIsGemma3Loading(false);
+      //       console.error('[gemma3-worker] Error:', error);
+      //     }
+      //   };
+      //   workerGemma3.current.postMessage({ type: 'load' });
     }
   }, []);
 
@@ -830,6 +861,24 @@ function App() {
             {/* Transcribed text area */}
             {text && (
               <div className="w-full max-w-2xl">
+                {/* Qwen3 loading progress indicator */}
+                {isQwen3Loading && qwen3ProgressItems.length > 0 && (
+                  <div className="mb-4 w-full max-w-md mx-auto">
+                    {qwen3ProgressItems.map((item, idx) => (
+                      <div key={item.file + idx} className="mb-2">
+                        <div className="flex justify-between text-xs text-gray-300 mb-0.5">
+                          <span>{item.file}</span>
+                          <span>{item.progress ? item.progress.toFixed(1) : 0}%</span>
+                        </div>
+                        <Progress
+                          text={item.name}
+                          percentage={item.progress}
+                          total={item.total}
+                        />
+                      </div>
+                    ))}
+                  </div>
+                )}
                 {!isQwen3Loading && isQwen3Initialized && (
                   <button
                     className="right-2 hover:bg-purple-600 text-white px-4 py-2 rounded transition-colors text-sm font-medium"
@@ -837,7 +886,7 @@ function App() {
                   >
                     ✨
                   </button>)}
-                {isQwen3Loading && isQwen3Initialized  && (
+                {isQwen3Loading && isQwen3Initialized && (
                   <span className="ml-2 animate-spin inline-block align-middle">
                     <svg className="w-5 h-5 text-purple-500" fill="none" viewBox="0 0 24 24">
                       <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
@@ -845,8 +894,11 @@ function App() {
                     </svg>
                   </span>
                 )}
+                <div className="text-xs italic text-gray-400 opacity-70">
+                  {qwen3OutputStream}
+                </div>
                 {/* Gemma3 button */}
-                {!isGemma3Loading && isGemma3Initialized && (
+                {/* {!isGemma3Loading && isGemma3Initialized && (
                   <button
                     className="ml-2 right-2 hover:bg-green-600 text-white px-4 py-2 rounded transition-colors text-sm font-medium"
                     onClick={handleGemma3}
@@ -860,7 +912,7 @@ function App() {
                       <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8z"></path>
                     </svg>
                   </span>
-                )}
+                )} */}
                 <div
                   className="app-region-no-drag bg-gray-50 dark:bg-dark-600 rounded-lg p-4 h-48 overflow-y-auto transition-colors shadow-inner custom-scrollbar transcribed-scrollbar"
                   style={{ fontFamily: 'inherit', fontSize: '1.08em' }}

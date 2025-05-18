@@ -22,16 +22,16 @@ const processQueue = () => {
 };
 
 const loadPipeline = async () => {
-  try { 
+  try {
     postMessage({ status: 'loading' });
     log('Loading Qwen3 pipeline...');
     const pipe = await pipeline(
       "text-generation",
-      
+
       "onnx-community/Qwen3-0.6B-ONNX",
       // "onnx-community/Qwen3-1.7B-ONNX",
       { dtype: "q4f16" }
-    
+
       // { dtype: "q8" }
       //   { dtype: "fp16" }
     );
@@ -59,9 +59,14 @@ const handleMessage = async (event) => {
   }
   try {
     log('Qwen3 generating for input:', input);
+    const PROMPT_DEFAULT = `Be concise.No yapping. You will get a transcript.
+          Return the summary of the transcript. If there is repeat statement use only most bottom as its the latest one.`
     const messages = [
-      { role: "system", content: "You are expert transcriptionist. When you see similar sentences, only keep the latest one of them. " },
-      { role: "user", content: input },
+      {
+        role: "system", content:
+          PROMPT_DEFAULT
+      },
+      { role: "user", content: `${PROMPT_DEFAULT}[transcript] ${input} [/transcript]` },
     ];
     const [START_THINKING_TOKEN_ID, END_THINKING_TOKEN_ID] = tokenizer.encode(
       "<think></think>",
@@ -70,7 +75,7 @@ const handleMessage = async (event) => {
     const inputs = tokenizer.apply_chat_template(messages, {
       add_generation_prompt: true,
       return_dict: true,
-      enable_thinking: false,
+      enable_thinking: reasonEnabled,
     });
     const token_callback_function = (tokens) => {
       startTime ??= performance.now();
