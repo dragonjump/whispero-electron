@@ -32,7 +32,7 @@ app.commandLine.appendSwitch('enable-dawn-features', 'allow_unsafe_apis');
 app.commandLine.appendSwitch('enable-features', 'WebGPU');
 app.commandLine.appendSwitch('ignore-gpu-blocklist');
 app.commandLine.appendSwitch('enable-zero-copy');
-
+ 
 // Set memory limits for WebGPU
 app.commandLine.appendSwitch('gpu-memory-buffer-pool-size', '2048');
 app.commandLine.appendSwitch('shared-memory-size', '2048');

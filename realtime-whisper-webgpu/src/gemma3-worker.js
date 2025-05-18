@@ -1,3 +1,22 @@
+// import { pipeline } from "@huggingface/transformers";
+
+// // Create a text generation pipeline
+// const generator = await pipeline(
+//   "text-generation",
+//   "onnx-community/gemma-3-1b-it-ONNX",
+//   { dtype: "q4" },
+// );
+
+// // Define the list of messages
+// const messages = [
+//   { role: "system", content: "You are a helpful assistant." },
+//   { role: "user", content: "Write me a poem about Machine Learning." },
+// ];
+
+// // Generate a response
+// const output = await generator(messages, { max_new_tokens: 512, do_sample: false });
+// console.log(output[0].generated_text.at(-1).content);
+
 import { pipeline, TextStreamer, InterruptableStoppingCriteria } from "@huggingface/transformers";
 
 let tokenizer = null;
@@ -22,34 +41,29 @@ const processQueue = () => {
 };
 
 const loadPipeline = async () => {
-  try { 
+  try {
     postMessage({ status: 'loading' });
-    log('Loading Qwen3 pipeline...');
+    log('Loading Gemma3 pipeline...');
     const pipe = await pipeline(
       "text-generation",
-      
-      "onnx-community/Qwen3-0.6B-ONNX",
-      // "onnx-community/Qwen3-1.7B-ONNX",
-      { dtype: "q4f16" }
-    
-      // { dtype: "q8" }
-      //   { dtype: "fp16" }
+      "onnx-community/gemma-3-1b-it-ONNX",
+      { dtype: "q4" }
     );
     tokenizer = pipe.tokenizer;
     model = pipe.model;
     isReady = true;
     postMessage({ status: 'ready' });
-    log('Qwen3 pipeline ready.');
+    log('Gemma3 pipeline ready.');
     processQueue();
   } catch (error) {
+    console.error('[Worker Debug] Gemma3 pipeline load error:', error.message);
     postMessage({ status: 'error', error: error.message });
-    log('Qwen3 pipeline load error:', error.message);
+    log('Gemma3 pipeline load error:', error.message);
   }
 };
 
 const stopping_criteria = new InterruptableStoppingCriteria();
 let past_key_values_cache = null;
-let reasonEnabled = false;
 const handleMessage = async (event) => {
   const { input } = event.data;
   if (!input) {
@@ -58,42 +72,15 @@ const handleMessage = async (event) => {
     return;
   }
   try {
-    log('Qwen3 generating for input:', input);
+    log('Gemma3 generating for input:', input);
     const messages = [
-      { role: "system", content: "You are expert transcriptionist. When you see similar sentences, only keep the latest one of them. " },
+      { role: "system", content: "You are a helpful assistant." },
       { role: "user", content: input },
     ];
-    const [START_THINKING_TOKEN_ID, END_THINKING_TOKEN_ID] = tokenizer.encode(
-      "<think></think>",
-      { add_special_tokens: false },
-    );
     const inputs = tokenizer.apply_chat_template(messages, {
       add_generation_prompt: true,
       return_dict: true,
-      enable_thinking: false,
     });
-    const token_callback_function = (tokens) => {
-      startTime ??= performance.now();
-
-      if (numTokens++ > 0) {
-        tps = (numTokens / (performance.now() - startTime)) * 1000;
-      }
-      switch (Number(tokens[0])) {
-        case START_THINKING_TOKEN_ID:
-          state = "thinking";
-          break;
-        case END_THINKING_TOKEN_ID:
-          state = "answering";
-          break;
-      }
-      // Collect tokens only when answering
-      if (state === "answering") {
-        answerTokens.push(tokens[0]);
-      }
-      // Optionally log
-      // console.log(state, tokens, tokenizer.decode(tokens));
-    };
-
     const callback_function = (output) => {
       self.postMessage({
         status: "update",
@@ -103,25 +90,20 @@ const handleMessage = async (event) => {
         state,
       });
     };
-
     const streamer = new TextStreamer(tokenizer, {
       skip_prompt: true,
       skip_special_tokens: true,
       callback_function,
-      token_callback_function,
     });
-
     // Tell the main thread we are starting
     self.postMessage({ status: "start" });
     const start = performance.now();
-
     const { past_key_values, sequences } = await model.generate({
       ...inputs,
       past_key_values: past_key_values_cache,
-      do_sample: true,
+      do_sample: false,
       top_k: 50,
-      temperature: reasonEnabled ? 0.3 : 0.1,
-      // max_new_tokens: 16384,
+      temperature: 0.1,
       max_new_tokens: 50,
       streamer,
       stopping_criteria,
@@ -129,19 +111,17 @@ const handleMessage = async (event) => {
     });
     past_key_values_cache = past_key_values;
     console.log("Generation time:", performance.now() - start);
-
     // Decode only the answer tokens
-    const answerText = tokenizer.decode(answerTokens, { skip_special_tokens: true });
-
+    const answerText = tokenizer.decode(sequences[0], { skip_special_tokens: true });
     // Send the output back to the main thread
     self.postMessage({
       status: "complete",
       output: answerText,
     });
-    log('Qwen3 generation complete.');
+    log('Gemma3 generation complete.');
   } catch (error) {
     postMessage({ error: error.message });
-    log('Qwen3 generation error:', error.message);
+    log('Gemma3 generation error:', error.message);
   }
 };
 

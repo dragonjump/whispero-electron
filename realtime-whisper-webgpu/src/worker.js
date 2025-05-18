@@ -169,7 +169,7 @@ async function generate({ audio, language }) {
       num_beams: 1,  // Reduce beam search complexity
       do_sample: false,
       temperature: .3,
-      top_k: 20,
+      top_k: 50,
       // temperature: 1.0,
       // top_k: 50,
       use_cache: true,

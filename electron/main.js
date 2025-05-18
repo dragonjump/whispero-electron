@@ -32,6 +32,10 @@ if (!gotTheLock) {
 
   // Configure GPU settings before app is ready
   app.commandLine.appendSwitch('enable-unsafe-webgpu');
+  app.commandLine.appendSwitch('enable-gpu-rasterization');
+  app.commandLine.appendSwitch('ignore-gpu-blacklist');
+    app.commandLine.appendSwitch('enable-gpu-rasterization');
+app.commandLine.appendSwitch('ignore-gpu-blacklist');
 
   // ... existing code ...
 } 

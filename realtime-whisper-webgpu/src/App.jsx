@@ -318,6 +318,7 @@ function App() {
         case "loading":
           setStatus("loading");
           setLoadingMessage(e.data.message || "Loading models...");
+          console.log('[Worker Debug] Loading:', e.data.message);
           break;
         case "initiate":
           setProgressItems((prev) => [...prev, e.data]);
@@ -331,6 +332,7 @@ function App() {
               return item;
             }),
           );
+          // console.log('[Worker Debug] Progress:', e.data);
           break;
         case "done":
           setProgressItems((prev) =>
@@ -340,10 +342,12 @@ function App() {
         case "ready":
           setStatus("ready");
           recorderRef.current?.start();
+          console.log('[Worker Debug] Ready');
           break;
         case "start":
           setIsProcessing(true);
           recorderRef.current?.requestData();
+          console.log('[Worker Debug] start');
           break;
         case "update":
           const { tps } = e.data;
@@ -377,17 +381,17 @@ function App() {
             return;
           }
           // Append new transcription to the existing text
-          setText(prev => (prev ? prev + "\n\n\n<----->\n\n\n" + newText : newText));
+        await setText(prev => (prev ? prev + "\n\n\n<----->\n\n\n" + newText : newText));
           // setText( newText);
 
           setIsProcessing(false);
 
           // Copy text and handle result
-          const copySuccess = await copyToClipboard(newText);
+          const copySuccess = await copyToClipboard(text);
           if (copySuccess && window.electron) {
           }
-          if (newText) {
-            ipcRenderer.send('text-recognized', newText);
+          if (text) {
+            ipcRenderer.send('text-recognized', text);
           }
           break;
         case "error":
@@ -574,10 +578,17 @@ function App() {
   //   }
   // };
 
+  // Qwen3 worker state
   const workerQwen3 = useRef(null);
   const qwen3ReadyRef = useRef(false);
   const [isQwen3Loading, setIsQwen3Loading] = useState(false);
   const [isQwen3Initialized, setIsQwen3Initialized] = useState(false);
+
+  // Gemma3 worker state
+  const workerGemma3 = useRef(null);
+  const gemma3ReadyRef = useRef(false);
+  const [isGemma3Loading, setIsGemma3Loading] = useState(false);
+  const [isGemma3Initialized, setIsGemma3Initialized] = useState(false);
 
   useEffect(() => {
     if (!workerQwen3.current) {
@@ -599,25 +610,55 @@ function App() {
         } else if (status === 'log') {
           console.log('[qwen3-worker]', log);
         } else if (status === 'complete') {
-          // if (output) {
           setIsQwen3Loading(false);
           console.log('Qwen3 Output:', output);
           setText(output);
-          // Copy text and handle result
           const copySuccess = await copyToClipboard(output);
-          if (copySuccess && window.electron) {
-          }
+          if (copySuccess && window.electron) {}
           if (output) {
             ipcRenderer.send('text-recognized', output);
           }
-
         } else if (error) {
           setIsQwen3Loading(false);
           console.error('[qwen3-worker] Error:', error);
         }
       };
-      // Start loading the model
       workerQwen3.current.postMessage({ type: 'load' });
+    }
+    // Gemma3 worker init
+    if (!workerGemma3.current) {
+      workerGemma3.current = new Worker(new URL("./gemma3-worker.js", import.meta.url), {
+        type: "module",
+      });
+    //   gemma3ReadyRef.current = false;
+    //   workerGemma3.current.onmessage = async (event) => {
+    //     const { status, log, output, error } = event.data;
+    //     if (status === 'ready') {
+    //       gemma3ReadyRef.current = true;
+    //       setIsGemma3Initialized(true);
+    //       console.log('[gemma3-worker] Ready');
+    //     } else if (status === 'loading') {
+    //       console.log('[gemma3-worker] Loading...');
+    //     } else if (status === 'error') {
+    //       setIsGemma3Loading(false);
+    //       console.error('[gemma3-worker] Error:', event.data.error);
+    //     } else if (status === 'log') {
+    //       console.log('[gemma3-worker]', log);
+    //     } else if (status === 'complete') {
+    //       setIsGemma3Loading(false);
+    //       console.log('Gemma3 Output:', output);
+    //       setText(output);
+    //       const copySuccess = await copyToClipboard(output);
+    //       if (copySuccess && window.electron) {}
+    //       if (output) {
+    //         ipcRenderer.send('text-recognized', output);
+    //       }
+    //     } else if (error) {
+    //       setIsGemma3Loading(false);
+    //       console.error('[gemma3-worker] Error:', error);
+    //     }
+    //   };
+    //   workerGemma3.current.postMessage({ type: 'load' });
     }
   }, []);
 
@@ -631,23 +672,45 @@ function App() {
     }
   };
 
+  // Gemma3 handler
+  const handleGemma3 = () => {
+    toggleListeningSwitchOff(true);
+    if (workerGemma3.current && gemma3ReadyRef.current) {
+      setIsGemma3Loading(true);
+      workerGemma3.current.postMessage({ input: `\n\nTranscript:\n${text}\n` });
+    } else {
+      console.warn('gemma3-worker not ready');
+    }
+  };
+
   return (
     <div
       className="h-screen rounded-2xl overflow-hidden shadow-2xl"
       style={{ background: 'rgba(24,24,27,0.97)' }}
     >
       {status === "loading" ? (
-        <div className="flex flex-col items-center justify-center h-full text-center px-4">
+        <div className="flex flex-col items-center justify-center h-full text-center px-4 w-full">
           <h1 className="text-2xl font-bold mb-2 text-white/90">WhisperO</h1>
           <p className="text-sm text-gray-400 mb-4">
             Whisper your thoughts, we'll write them down. <br /> <br />
-
             <small className="text-white/90"> Offline, private & secure. Precise voice to transcribed text  dictation</small>
           </p>
-          {/* <div className="w-full max-w-xs">  */}
-          {/* Container for progress bar */}
-          {/* <Progress items={progressItems} message={loadingMessage} /> */}
-          {/* </div> */}
+          {/* Progress indicator for model loading */}
+          <div className="w-full max-w-md mx-auto mt-4">
+            {progressItems && progressItems.length > 0 && progressItems.map((item, idx) => (
+              <div key={item.file + idx} className="mb-2">
+                <div className="flex justify-between text-xs text-gray-300 mb-0.5">
+                  <span>{item.file}</span>
+                  <span>{item.progress ? item.progress.toFixed(1) : 0}%</span>
+                </div>
+                <Progress
+                  text={item.name}
+                  percentage={item.progress}
+                  total={item.total}
+                />
+              </div>
+            ))}
+          </div>
         </div>
       ) : error ? (
         <div className="flex items-center justify-center h-full">
@@ -777,6 +840,22 @@ function App() {
                 {isQwen3Loading && isQwen3Initialized  && (
                   <span className="ml-2 animate-spin inline-block align-middle">
                     <svg className="w-5 h-5 text-purple-500" fill="none" viewBox="0 0 24 24">
+                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8z"></path>
+                    </svg>
+                  </span>
+                )}
+                {/* Gemma3 button */}
+                {!isGemma3Loading && isGemma3Initialized && (
+                  <button
+                    className="ml-2 right-2 hover:bg-green-600 text-white px-4 py-2 rounded transition-colors text-sm font-medium"
+                    onClick={handleGemma3}
+                  >
+                    🪄
+                  </button>)}
+                {isGemma3Loading && isGemma3Initialized && (
+                  <span className="ml-2 animate-spin inline-block align-middle">
+                    <svg className="w-5 h-5 text-green-500" fill="none" viewBox="0 0 24 24">
                       <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
                       <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8z"></path>
                     </svg>
