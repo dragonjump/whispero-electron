@@ -796,7 +796,14 @@ function createWindow() {
 }
 
 // Start the app when ready
-app.whenReady().then(createWindow);
+app.whenReady().then(async () => {
+  const gpuStatus = app.getGPUFeatureStatus();
+  console.log('Electron GPU Feature Status:', gpuStatus);
+
+  const gpuInfo = await app.getGPUInfo('complete');
+  console.log('Electron GPU Info:', gpuInfo);
+  createWindow();
+});
 
 // Quit when all windows are closed
 app.on('window-all-closed', () => {

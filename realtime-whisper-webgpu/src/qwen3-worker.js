@@ -1,4 +1,5 @@
 import { pipeline, TextStreamer, InterruptableStoppingCriteria } from "@huggingface/transformers";
+import { env } from "@huggingface/transformers";
 
 let tokenizer = null;
 let model = null;
@@ -25,18 +26,34 @@ const loadPipeline = async () => {
   try {
     postMessage({ status: 'loading' });
     log('Loading Qwen3 pipeline...');
+    // Try to set ONNX backend to webgpu if possible
+    if (env && env.backends && env.backends.onnx) {
+      env.backends.onnx = 'webgpu';
+      postMessage({ status: 'log', log: 'Set ONNX backend to webgpu via env.backends.onnx' });
+    } else {
+      postMessage({ status: 'log', log: 'env.backends.onnx not available, could not set backend explicitly.' });
+    }
     const pipe = await pipeline(
       "text-generation",
-
       "onnx-community/Qwen3-0.6B-ONNX",
-      // "onnx-community/Qwen3-1.7B-ONNX",
       { dtype: "q4f16" }
-
-      // { dtype: "q8" }
-      //   { dtype: "fp16" }
     );
     tokenizer = pipe.tokenizer;
     model = pipe.model;
+    // Log ONNX backend info if available
+    let backend = null;
+    if (model && model.session && model.session.backend) {
+      backend = model.session.backend;
+    } else if (model && model.model && model.model.session && model.model.session.backend) {
+      backend = model.model.session.backend;
+    }
+    if (backend) {
+      log('ONNX backend in use:', backend);
+      postMessage({ status: 'log', log: `ONNX backend in use: ${backend}` });
+    } else {
+      log('ONNX backend info not found');
+      postMessage({ status: 'log', log: 'ONNX backend info not found' });
+    }
     isReady = true;
     postMessage({ status: 'ready' });
     log('Qwen3 pipeline ready.');
