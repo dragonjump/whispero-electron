@@ -5,7 +5,7 @@ import { pipeline } from '@huggingface/transformers';
 let pipe = null;
 let isReady = false;
 let queue = [];
-
+// https://huggingface.co/spaces/onnx-community/model-explorer
 const log = (...args) => {
   postMessage({ status: 'log', log: args.map(String).join(' ') });
 };
@@ -21,12 +21,15 @@ const loadPipeline = async () => {
   try {
     postMessage({ status: 'loading' });
     log('Loading pipeline...');
-     
+    //  'HuggingFaceTB/SmolLM2-135M-Instruct'  'q4f16'
     // pipe = await pipeline('text-generation', 'HuggingFaceTB/SmolLM2-360M-Instruct');
     //   pipe = await pipeline('text-generation', 'HuggingFaceTB/SmolLM2-360M-Instruct', {
     //     dtype: 'fp32' // Or 'fp32' for full precision
     // });
-    pipe = await pipeline('text-generation', 'HuggingFaceTB/SmolLM2-135M-Instruct');
+    pipe = await pipeline('text-generation',
+      'HuggingFaceTB/SmolLM2-135M-Instruct', {
+      dtype: 'q4f16'
+    });
     isReady = true;
     postMessage({ status: 'ready' });
     log('Pipeline ready.');
@@ -45,9 +48,13 @@ const handleMessage = async (event) => {
     return;
   }
   try {
+    if (!input) { return }
     log('Generating for input:', input);
-    const result = await pipe(input, { max_length: 100 });
-    postMessage({ output: result.length?result[0].generated_text:input });
+    // Add a prompt to instruct the model to only fix grammar and sentence structure
+    const prompt = `Rewrite: "${input.trim()}" Corrected:`;
+    const result = await pipe(prompt, { max_length: 100 });
+    console.warn('smol result', result);
+    postMessage({ output: result.length ? result[0].generated_text : input });
     log('Generation complete.');
   } catch (error) {
     postMessage({ error: error.message });

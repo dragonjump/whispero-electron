@@ -36,7 +36,9 @@ const loadPipeline = async () => {
     const pipe = await pipeline(
       "text-generation",
       "onnx-community/Qwen3-0.6B-ONNX",
-      { dtype: "q4f16" }
+      { dtype: "q4" 
+        // "q4f16" 
+      }
     );
     tokenizer = pipe.tokenizer;
     model = pipe.model;
@@ -76,8 +78,7 @@ const handleMessage = async (event) => {
   }
   try {
     log('Qwen3 generating for input:', input);
-    const PROMPT_DEFAULT = `Be concise.No yapping. You will get a transcript.
-          Return the summary of the transcript. If there is repeat statement use only most bottom as its the latest one.`
+    const PROMPT_DEFAULT = ` No yapping. You will get a transcript. Just fix the grammar and sentences. `
     const messages = [
       {
         role: "system", content:

@@ -359,37 +359,37 @@ function App() {
     }
   }, []);
 
-  // useEffect(() => {
-  //   if (!workerSmol.current) {
-  //     workerSmol.current = new Worker(new URL("./smol-worker.js", import.meta.url), {
-  //       type: "module",
-  //     });
-  //     smolReadyRef.current = false;
-  //     // Listen for status/log messages
-  //     workerSmol.current.onmessage = (event) => {
-  //       const { status, log, output, error } = event.data;
-  //       if (status === 'ready') {
-  //         smolReadyRef.current = true;
-  //         console.log('[smol-worker] Ready');
-  //         // Now safe to send input
-  //         // workerSmol.current.postMessage({ input: 'Once upon a time...' });
-  //       } else if (status === 'loading') {
-  //         console.log('[smol-worker] Loading...');
-  //       } else if (status === 'error') {
-  //         console.error('[smol-worker] Error:', event.data.error);
-  //       } else if (status === 'log') {
-  //         console.log('[smol-worker]', log);
-  //       } else if (output) {
-  //         setText(output);
-  //         console.log('Generated Text:', output);
-  //       } else if (error) {
-  //         console.error('[smol-worker] Error:', error);
-  //       }
-  //     };
-  //     // Start loading the model
-  //     workerSmol.current.postMessage({ type: 'load' });
-  //   }
-  // }, []);
+  useEffect(() => {
+    if (!workerSmol.current) {
+      workerSmol.current = new Worker(new URL("./smol-worker.js", import.meta.url), {
+        type: "module",
+      });
+      smolReadyRef.current = false;
+      // Listen for status/log messages
+      workerSmol.current.onmessage = (event) => {
+        const { status, log, output, error } = event.data;
+        if (status === 'ready') {
+          smolReadyRef.current = true;
+          console.log('[smol-worker] Ready');
+          // Now safe to send input
+          // workerSmol.current.postMessage({ input: 'Once upon a time...' });
+        } else if (status === 'loading') {
+          console.log('[smol-worker] Loading...');
+        } else if (status === 'error') {
+          console.error('[smol-worker] Error:', event.data.error);
+        } else if (status === 'log') {
+          console.log('[smol-worker]', log);
+        } else if (output) {
+          setText(output);
+          console.log('Generated Text:', output);
+        } else if (error) {
+          console.error('[smol-worker] Error:', error);
+        }
+      };
+      // Start loading the model
+      workerSmol.current.postMessage({ type: 'load' });
+    }
+  }, []);
 
   // Setup worker message handlers
   // const setupWorkerHandlers0 = () => {
@@ -622,139 +622,143 @@ function App() {
 
 
   // Qwen3 worker state
-  const workerQwen3 = useRef(null);
-  const qwen3ReadyRef = useRef(false);
-  const [isQwen3Loading, setIsQwen3Loading] = useState(false);
-  const [isQwen3Initialized, setIsQwen3Initialized] = useState(false);
-  const [qwen3ProgressItems, setQwen3ProgressItems] = useState([]);
-  const [qwen3OutputStream, setQwen3OutputStream] = useState('');
+  // const workerQwen3 = useRef(null);
+  // const qwen3ReadyRef = useRef(false);
+  // const [isQwen3Loading, setIsQwen3Loading] = useState(false);
+  // const [isQwen3Initialized, setIsQwen3Initialized] = useState(false);
+  // const [qwen3ProgressItems, setQwen3ProgressItems] = useState([]);
+  // const [qwen3OutputStream, setQwen3OutputStream] = useState('');
 
   // Gemma3 worker state
-  const workerGemma3 = useRef(null);
-  const gemma3ReadyRef = useRef(false);
-  const [isGemma3Loading, setIsGemma3Loading] = useState(false);
-  const [isGemma3Initialized, setIsGemma3Initialized] = useState(false);
+  // const workerGemma3 = useRef(null);
+  // const gemma3ReadyRef = useRef(false);
+  // const [isGemma3Loading, setIsGemma3Loading] = useState(false);
+  // const [isGemma3Initialized, setIsGemma3Initialized] = useState(false);
 
+  // useEffect(() => {
+  //   if (!workerQwen3.current) {
+  //     workerQwen3.current = new Worker(new URL("./qwen3-worker.js", import.meta.url), {
+  //       type: "module",
+  //     });
+  //     qwen3ReadyRef.current = false;
+  //     workerQwen3.current.onmessage = async (event) => {
+  //       const { status, log, output, error } = event.data;
+  //       if (status === 'ready') {
+  //         qwen3ReadyRef.current = true;
+  //         setIsQwen3Initialized(true);
+  //         setQwen3ProgressItems([]);
+  //         setIsQwen3Loading(false);
+  //         console.log('[qwen3-worker] Ready');
+  //       } else if (status === 'loading') {
+  //         setIsQwen3Loading(true);
+  //         setQwen3ProgressItems([]);
+  //         console.log('[qwen3-worker] Loading...');
+  //       } else if (status === 'progress') {
+  //         setQwen3ProgressItems(prev => {
+  //           // Update or add the progress item by file
+  //           const idx = prev.findIndex(item => item.file === event.data.file);
+  //           let updated;
+  //           if (idx !== -1) {
+  //             updated = [...prev];
+  //             updated[idx] = { ...updated[idx], ...event.data };
+  //           } else {
+  //             updated = [...prev, event.data];
+  //           }
+  //           console.log('[Qwen3 Progress Debug] prev:', prev, 'new:', updated);
+  //           return updated;
+  //         });
+  //       } else if (status === 'error') {
+  //         setIsQwen3Loading(false);
+  //         setQwen3ProgressItems([]);
+  //         console.error('[qwen3-worker] Error:', event.data.error);
+  //       } else if (status === 'log') {
+  //         console.log('[qwen3-worker]', log);
+  //       } else if (status === 'update') {
+  //         console.log('Qwen3 buffering Output:', output);
+  //         setQwen3OutputStream(prev => prev + " " + output);
+  //       } else if (status === 'complete') {
+  //         setQwen3OutputStream('');
+  //         setIsQwen3Loading(false);
+  //         setQwen3ProgressItems([]);
+  //         console.log('Qwen3 Output:', output);
+  //         setText(output);
+  //         const copySuccess = await copyToClipboard(output);
+  //         if (copySuccess && window.electron) { }
+  //         if (output) {
+  //           ipcRenderer.send('text-recognized', output);
+  //         }
+  //       } else if (error) {
+  //         setIsQwen3Loading(false);
+  //         setQwen3ProgressItems([]);
+  //         console.error('[qwen3-worker] Error:', error);
+  //       }
+  //     };
+  //     workerQwen3.current.postMessage({ type: 'load' });
+  //   }
+  //   // Gemma3 worker init
+  //   // if (!workerGemma3.current) {
+  //     // workerGemma3.current = new Worker(new URL("./gemma3-worker.js", import.meta.url), {
+  //     //   type: "module",
+  //     // });
+  //     //   gemma3ReadyRef.current = false;
+  //     //   workerGemma3.current.onmessage = async (event) => {
+  //     //     const { status, log, output, error } = event.data;
+  //     //     if (status === 'ready') {
+  //     //       gemma3ReadyRef.current = true;
+  //     //       setIsGemma3Initialized(true);
+  //     //       console.log('[gemma3-worker] Ready');
+  //     //     } else if (status === 'loading') {
+  //     //       console.log('[gemma3-worker] Loading...');
+  //     //     } else if (status === 'error') {
+  //     //       setIsGemma3Loading(false);
+  //     //       console.error('[gemma3-worker] Error:', event.data.error);
+  //     //     } else if (status === 'log') {
+  //     //       console.log('[gemma3-worker]', log);
+  //     //     } else if (status === 'complete') {
+  //     //       setIsGemma3Loading(false);
+  //     //       console.log('Gemma3 Output:', output);
+  //     //       setText(output);
+  //     //       const copySuccess = await copyToClipboard(output);
+  //     //       if (copySuccess && window.electron) {}
+  //     //       if (output) {
+  //     //         ipcRenderer.send('text-recognized', output);
+  //     //       }
+  //     //     } else if (error) {
+  //     //       setIsGemma3Loading(false);
+  //     //       console.error('[gemma3-worker] Error:', error);
+  //     //     }
+  //     //   };
+  //     //   workerGemma3.current.postMessage({ type: 'load' });
+  //   // }
+  // }, []);
+
+  // Handler for Smol worker (replaces Qwen3)
+  const [isSmolLoading, setIsSmolLoading] = useState(false);
+  const handleSmol = () => {
+    toggleListeningSwitchOff(true);
+    if (workerSmol.current && smolReadyRef.current) {
+      setIsSmolLoading(true);
+      workerSmol.current.postMessage({ input: text });
+    } else {
+      console.warn('smol-worker not ready');
+    }
+  };
+
+  // Listen for Smol worker output to reset loading state
   useEffect(() => {
-    if (!workerQwen3.current) {
-      workerQwen3.current = new Worker(new URL("./qwen3-worker.js", import.meta.url), {
-        type: "module",
-      });
-      qwen3ReadyRef.current = false;
-      workerQwen3.current.onmessage = async (event) => {
-        const { status, log, output, error } = event.data;
-        if (status === 'ready') {
-          qwen3ReadyRef.current = true;
-          setIsQwen3Initialized(true);
-          setQwen3ProgressItems([]);
-          setIsQwen3Loading(false);
-          console.log('[qwen3-worker] Ready');
-        } else if (status === 'loading') {
-          setIsQwen3Loading(true);
-          setQwen3ProgressItems([]);
-          console.log('[qwen3-worker] Loading...');
-        } else if (status === 'progress') {
-          setQwen3ProgressItems(prev => {
-            // Update or add the progress item by file
-            const idx = prev.findIndex(item => item.file === event.data.file);
-            let updated;
-            if (idx !== -1) {
-              updated = [...prev];
-              updated[idx] = { ...updated[idx], ...event.data };
-            } else {
-              updated = [...prev, event.data];
-            }
-            console.log('[Qwen3 Progress Debug] prev:', prev, 'new:', updated);
-            return updated;
-          });
-        } else if (status === 'error') {
-          setIsQwen3Loading(false);
-          setQwen3ProgressItems([]);
-          console.error('[qwen3-worker] Error:', event.data.error);
-        } else if (status === 'log') {
-          console.log('[qwen3-worker]', log);
-        } else if (status === 'update') {
-
-          console.log('Qwen3 buffering Output:', output);
-          setQwen3OutputStream(prev => prev + " " + output);
-
-        } else if (status === 'complete') {
-          setQwen3OutputStream('');
-
-          setIsQwen3Loading(false);
-          setQwen3ProgressItems([]);
-          console.log('Qwen3 Output:', output);
-          setText(output);
-          const copySuccess = await copyToClipboard(output);
-          if (copySuccess && window.electron) { }
-          if (output) {
-            ipcRenderer.send('text-recognized', output);
-          }
-        } else if (error) {
-          setIsQwen3Loading(false);
-          setQwen3ProgressItems([]);
-          console.error('[qwen3-worker] Error:', error);
-        }
-      };
-      workerQwen3.current.postMessage({ type: 'load' });
-    }
-    // Gemma3 worker init
-    if (!workerGemma3.current) {
-      // workerGemma3.current = new Worker(new URL("./gemma3-worker.js", import.meta.url), {
-      //   type: "module",
-      // });
-      //   gemma3ReadyRef.current = false;
-      //   workerGemma3.current.onmessage = async (event) => {
-      //     const { status, log, output, error } = event.data;
-      //     if (status === 'ready') {
-      //       gemma3ReadyRef.current = true;
-      //       setIsGemma3Initialized(true);
-      //       console.log('[gemma3-worker] Ready');
-      //     } else if (status === 'loading') {
-      //       console.log('[gemma3-worker] Loading...');
-      //     } else if (status === 'error') {
-      //       setIsGemma3Loading(false);
-      //       console.error('[gemma3-worker] Error:', event.data.error);
-      //     } else if (status === 'log') {
-      //       console.log('[gemma3-worker]', log);
-      //     } else if (status === 'complete') {
-      //       setIsGemma3Loading(false);
-      //       console.log('Gemma3 Output:', output);
-      //       setText(output);
-      //       const copySuccess = await copyToClipboard(output);
-      //       if (copySuccess && window.electron) {}
-      //       if (output) {
-      //         ipcRenderer.send('text-recognized', output);
-      //       }
-      //     } else if (error) {
-      //       setIsGemma3Loading(false);
-      //       console.error('[gemma3-worker] Error:', error);
-      //     }
-      //   };
-      //   workerGemma3.current.postMessage({ type: 'load' });
-    }
+    if (!workerSmol.current) return;
+    const handler = (event) => {
+      const { status, output } = event.data;
+      if (status === 'ready' || status === 'loading') {
+        setIsSmolLoading(status === 'loading');
+      }
+      if (output) {
+        setIsSmolLoading(false);
+      }
+    };
+    workerSmol.current.addEventListener('message', handler);
+    return () => workerSmol.current.removeEventListener('message', handler);
   }, []);
-
-  const handleQwen3 = () => {
-    toggleListeningSwitchOff(true);
-    if (workerQwen3.current && qwen3ReadyRef.current) {
-      setIsQwen3Loading(true);
-      workerQwen3.current.postMessage({ input: `\n\nTranscript:\n${text}\n` });
-    } else {
-      console.warn('qwen3-worker not ready');
-    }
-  };
-
-  // Gemma3 handler
-  const handleGemma3 = () => {
-    toggleListeningSwitchOff(true);
-    if (workerGemma3.current && gemma3ReadyRef.current) {
-      setIsGemma3Loading(true);
-      workerGemma3.current.postMessage({ input: `\n\nTranscript:\n${text}\n` });
-    } else {
-      console.warn('gemma3-worker not ready');
-    }
-  };
 
   return (
     <div
@@ -903,58 +907,23 @@ function App() {
             {/* Transcribed text area */}
             {text && (
               <div className="w-full max-w-2xl">
-                {/* Qwen3 loading progress indicator */}
-                {isQwen3Loading && qwen3ProgressItems.length > 0 && (
-                  <div className="mb-4 w-full max-w-md mx-auto">
-                    {qwen3ProgressItems.map((item, idx) => (
-                      <div key={item.file + idx} className="mb-2">
-                        <div className="flex justify-between text-xs text-gray-300 mb-0.5">
-                          <span>{item.file}</span>
-                          <span>{item.progress ? item.progress.toFixed(1) : 0}%</span>
-                        </div>
-                        <Progress
-                          text={item.name}
-                          percentage={item.progress}
-                          total={item.total}
-                        />
-                      </div>
-                    ))}
-                  </div>
-                )}
-                {!isQwen3Loading && isQwen3Initialized && (
-                  <button
-                    className="right-2 hover:bg-purple-600 text-white px-4 py-2 rounded transition-colors text-sm font-medium"
-                    onClick={handleQwen3}
-                  >
-                    ✨
-                  </button>)}
-                {isQwen3Loading && isQwen3Initialized && (
-                  <span className="ml-2 animate-spin inline-block align-middle">
-                    <svg className="w-5 h-5 text-purple-500" fill="none" viewBox="0 0 24 24">
-                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8z"></path>
-                    </svg>
-                  </span>
-                )}
-                <div className="text-xs italic text-gray-400 opacity-70">
-                  {qwen3OutputStream}
-                </div>
-                {/* Gemma3 button */}
-                {/* {!isGemma3Loading && isGemma3Initialized && (
-                  <button
-                    className="ml-2 right-2 hover:bg-green-600 text-white px-4 py-2 rounded transition-colors text-sm font-medium"
-                    onClick={handleGemma3}
-                  >
-                    🪄
-                  </button>)}
-                {isGemma3Loading && isGemma3Initialized && (
-                  <span className="ml-2 animate-spin inline-block align-middle">
-                    <svg className="w-5 h-5 text-green-500" fill="none" viewBox="0 0 24 24">
-                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8z"></path>
-                    </svg>
-                  </span>
-                )} */}
+                {/* Smol worker button replaces Qwen3 */}
+                <button
+                  className="right-2 hover:bg-blue-600 text-white px-4 py-2 rounded transition-colors text-sm font-medium"
+                  onClick={handleSmol}
+                  disabled={isSmolLoading}
+                >
+                  {isSmolLoading ? (
+                    <span className="animate-spin inline-block align-middle" style={{ opacity: 0.5 }}>
+                      <svg className="w-5 h-5 text-blue-500" fill="none" viewBox="0 0 24 24">
+                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8z"></path>
+                      </svg>
+                    </span>
+                  ) : (
+                    <>🪶 Smol LLM</>
+                  )}
+                </button>
                 <div
                   className="app-region-no-drag bg-gray-50 dark:bg-dark-600 rounded-lg p-4 h-48 overflow-y-auto transition-colors shadow-inner custom-scrollbar transcribed-scrollbar"
                   style={{ fontFamily: 'inherit', fontSize: '1.08em' }}
