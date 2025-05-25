@@ -93,9 +93,9 @@ async function simulatePaste() {
       
       // First do Ctrl+A to select all
       console.log('[Paste Debug] Selecting all text (Ctrl+A)');
-      // await keyboard.pressKey(Key.LeftControl);
-      // await keyboard.type('a');
-      // await keyboard.releaseKey(Key.LeftControl);
+      await keyboard.pressKey(Key.LeftControl);
+      await keyboard.type('a');
+      await keyboard.releaseKey(Key.LeftControl);
       
       // Small delay between operations
       await new Promise(resolve => setTimeout(resolve, 50));

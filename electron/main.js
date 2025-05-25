@@ -36,6 +36,6 @@ if (!gotTheLock) {
   app.commandLine.appendSwitch('ignore-gpu-blacklist');
     app.commandLine.appendSwitch('enable-gpu-rasterization');
 app.commandLine.appendSwitch('ignore-gpu-blacklist');
-
+ 
   // ... existing code ...
 } 

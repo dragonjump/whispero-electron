@@ -274,15 +274,88 @@ function App() {
 
   // Initialize worker immediately
   useEffect(() => {
-
     if (!worker.current) {
-      worker.current = new Worker(new URL("./worker.js", import.meta.url), {
+      worker.current = new Worker(new URL("./moonshine-worker.js", import.meta.url), {
         type: "module",
       });
-      setupWorkerHandlers();
+      worker.current.onmessage = async (e) => {
+        const { data } = e;
+        if (data.error) {
+          console.error('[Worker Event] Received onmessage error:', data);
+          setProgressItems([]); // Clear progress on error
+          return onError(data.error);
+        }
+        if (data.type === "info") {
+          console.warn('[Worker Event] Received onmessage info:', data);
+          return;
+        }
+        if (data.type === "progress") {
+          setProgressItems((prev) => {
+            // Update or add the progress item by file
+            const idx = prev.findIndex(item => item.file === data.file);
+            let updated;
+            if (idx !== -1) {
+              updated = [...prev];
+              updated[idx] = { ...updated[idx], ...data };
+            } else {
+              updated = [...prev, data];
+            }
+            return updated;
+          });
+          return;
+        }
+        if (data.type === "log") {
+          return;
+        }
+        if (data.type === "status") {
+          console.log('[Worker Event] Received onmessage status:', data);
+          if (data.status === "loading") {
+            setStatus("loading");
+            setLoadingMessage(data.message || "Loading AI models...");
+            console.log('[Worker Event] Loading:', data.message);
+          }
+          if (data.status === "ready") {
+            setStatus("ready");
+            setLoadingMessage('');
+            console.log('[Worker Event] ready:', data.message);
+          }
+          if (data.status === "ready") {
+            setProgressItems([]); // Clear progress on ready
+          }
+          return;
+        }
 
-      // Start loading the model
+        if (data.type !== "status" && isListening) {
+          console.log('[Worker Event] Received onmessage text:', data);
+
+          const currentText = textRef.current || '';
+          const combinedText = currentText + "\n\n\n " + data.message + '';
+          await setText(combinedText);
+          setIsProcessing(false);
+          const copySuccess = await copyToClipboard(combinedText);
+          if (copySuccess && window.electron) { }
+          if (combinedText) {
+            ipcRenderer.send('text-recognized', combinedText);
+          }
+        }
+      };
+
+      worker.current.onError = (err) => {
+        console.error('[Worker Event] Worker error event:', err);
+        setError(err.message || 'Worker error');
+      };
+
+
+      console.log('[Worker Event] Event listeners attached');
       worker.current.postMessage({ type: 'load' });
+
+      // Cleanup
+      return () => {
+        worker.current = null;
+        // worker.current.removeEventListener("message", onMessage);
+        // worker.current.removeEventListener("error", onError);
+        console.log('[Worker Event] Event listeners removed');
+      };
     }
   }, []);
 
@@ -319,191 +392,160 @@ function App() {
   // }, []);
 
   // Setup worker message handlers
-  const setupWorkerHandlers = () => {
-    worker.current.addEventListener("message", async (e) => {
-      switch (e.data.status) {
-        case "loading":
-          setStatus("loading");
-          setLoadingMessage(e.data.message || "Loading models...");
-          console.log('[Worker Debug] Loading:', e.data.message);
-          break;
-        case "initiate":
-          setProgressItems((prev) => [...prev, e.data]);
-          break;
-        case "progress":
-          setProgressItems((prev) =>
-            prev.map((item) => {
-              if (item.file === e.data.file) {
-                return { ...item, ...e.data };
-              }
-              return item;
-            }),
-          );
-          // console.log('[Worker Debug] Progress:', e.data);
-          break;
-        case "done":
-          setProgressItems((prev) =>
-            prev.filter((item) => item.file !== e.data.file),
-          );
-          break;
-        case "ready":
-          setStatus("ready");
-          recorderRef.current?.start();
-          // console.log('[Worker Debug] Ready');
-          break;
-        case "start":
-          setIsProcessing(true);
-          recorderRef.current?.requestData();
-          console.log('[Worker Debug] start');
-          break;
-        case "update":
-          const { tps } = e.data;
-          setTps(tps);
-          console.log('[Worker Debug] update tps', tps);
-          break;
-        case "complete":
-          // Always treat output as array and join to string
-          const newTextArr = e.data.output;
-          const newText = Array.isArray(newTextArr) ? newTextArr.join(' ').trim() : (newTextArr || '').trim();
+  // const setupWorkerHandlers0 = () => {
+  //   worker.current.addEventListener("message", async (e) => {
+  //     switch (e.data.status) {
+  //       case "loading":
+  //         setStatus("loading");
+  //         setLoadingMessage(e.data.message || "Loading models...");
+  //         console.log('[Worker Debug] Loading:', e.data.message);
+  //         break;
+  //       case "initiate":
+  //         setProgressItems((prev) => [...prev, e.data]);
+  //         break;
+  //       case "progress":
+  //         setProgressItems((prev) =>
+  //           prev.map((item) => {
+  //             if (item.file === e.data.file) {
+  //               return { ...item, ...e.data };
+  //             }
+  //             return item;
+  //           }),
+  //         );
+  //         // console.log('[Worker Debug] Progress:', e.data);
+  //         break;
+  //       case "done":
+  //         setProgressItems((prev) =>
+  //           prev.filter((item) => item.file !== e.data.file),
+  //         );
+  //         break;
+  //       case "ready":
+  //         setStatus("ready");
+  //         recorderRef.current?.start();
+  //         // console.log('[Worker Debug] Ready');
+  //         break;
+  //       case "start":
+  //         setIsProcessing(true);
+  //         recorderRef.current?.requestData();
+  //         console.log('[Worker Debug] start');
+  //         break;
+  //       case "update":
+  //         const { tps } = e.data;
+  //         setTps(tps);
+  //         console.log('[Worker Debug] update tps', tps);
+  //         break;
+  //       case "complete":
+  //         // Always treat output as array and join to string
+  //         const newTextArr = e.data.output;
+  //         const newText = Array.isArray(newTextArr) ? newTextArr.join(' ').trim() : (newTextArr || '').trim();
 
-          // Don't update if text hasn't changed
-          const currentText = textRef.current;
-          console.log('[Text Debug] newText:', newText);
-          console.log('[Text Debug] text:', currentText);
-          if (newText === currentText) {
-            console.log('[Text Debug] Text unchanged, skipping update');
-            setIsProcessing(false);
-            return;
-          }
+  //         // Don't update if text hasn't changed
+  //         const currentText = textRef.current;
+  //         console.log('[Text Debug] newText:', newText);
+  //         console.log('[Text Debug] text:', currentText);
+  //         if (newText === currentText) {
+  //           console.log('[Text Debug] Text unchanged, skipping update');
+  //           setIsProcessing(false);
+  //           return;
+  //         }
 
-          if (typeof currentText === 'string' && currentText.includes(newText)) {
-            console.log('[Text Debug] Text unchanged, skipping update');
-            setIsProcessing(false);
-            return;
-          }
-          const safeNewText = newText.toLowerCase().trim();
-          const safeOldText = (typeof currentText === 'string' ? currentText : '').toLowerCase().trim();
-          if (safeOldText.indexOf(safeNewText) > -1) {
-            console.log('[Text Debug] Same match found, skipping update');
-            setIsProcessing(false);
-            return;
-          }
-          const combinedText = currentText + "\n\n\n--------------\n\n\n" + newText;
-          // Append new transcription to the existing text
-          await setText(combinedText);
-          // setText( newText);
+  //         if (typeof currentText === 'string' && currentText.includes(newText)) {
+  //           console.log('[Text Debug] Text unchanged, skipping update');
+  //           setIsProcessing(false);
+  //           return;
+  //         }
+  //         const safeNewText = newText.toLowerCase().trim();
+  //         const safeOldText = (typeof currentText === 'string' ? currentText : '').toLowerCase().trim();
+  //         if (safeOldText.indexOf(safeNewText) > -1) {
+  //           console.log('[Text Debug] Same match found, skipping update');
+  //           setIsProcessing(false);
+  //           return;
+  //         }
+  //         const combinedText = currentText + "\n\n\n--------------\n\n\n" + newText;
+  //         // Append new transcription to the existing text
+  //         await setText(combinedText);
+  //         // setText( newText);
 
-          setIsProcessing(false);
+  //         setIsProcessing(false);
 
-          // Copy text and handle result
-          const copySuccess = await copyToClipboard(combinedText);
-          if (copySuccess && window.electron) {
-          }
-          if (combinedText) {
-            ipcRenderer.send('text-recognized', combinedText);
-          }
-          break;
-        case "error":
-          console.error('Worker error:', e.data.error);
-          setError(e.data.error);
-          setIsProcessing(false);
-          break;
-      }
-    });
-  };
+  //         // Copy text and handle result
+  //         const copySuccess = await copyToClipboard(combinedText);
+  //         if (copySuccess && window.electron) {
+  //         }
+  //         if (combinedText) {
+  //           ipcRenderer.send('text-recognized', combinedText);
+  //         }
+  //         break;
+  //       case "error":
+  //         console.error('Worker error:', e.data.error);
+  //         setError(e.data.error);
+  //         setIsProcessing(false);
+  //         break;
+  //     }
+  //   });
+  // };
 
+  // --- New AudioWorklet-based real-time audio streaming ---
   useEffect(() => {
-    if (recorderRef.current) return; // Already set
+    let audioContext, source, worklet;
+    let ignore = false;
+    let localStream;
 
     if (navigator.mediaDevices.getUserMedia) {
       navigator.mediaDevices
-        .getUserMedia({ audio: true })
-        .then((stream) => {
-          setStream(stream);
+        .getUserMedia({ audio: { channelCount: 1, sampleRate: WHISPER_SAMPLING_RATE } })
+        .then(async (stream) => {
+          if (ignore) return;
 
-          recorderRef.current = new MediaRecorder(stream);
-          audioContextRef.current = new AudioContext({
+          audioContext = new (window.AudioContext || window.webkitAudioContext)({
             sampleRate: WHISPER_SAMPLING_RATE,
+            latencyHint: "interactive",
           });
 
-          recorderRef.current.onstart = () => {
-            setRecording(true);
-            setChunks([]);
-          };
-          recorderRef.current.ondataavailable = (e) => {
-            if (e.data.size > 0) {
-              setChunks((prev) => [...prev, e.data]);
-            } else {
-              // Empty chunk received, so we request new data after a short timeout
-              setTimeout(() => {
-                recorderRef.current.requestData();
-              }, 25);
-            }
+          source = audioContext.createMediaStreamSource(stream);
+
+          // Load your AudioWorklet processor
+          await audioContext.audioWorklet.addModule(
+            new URL("./moonshine-processor.js", import.meta.url)
+          );
+
+          worklet = new AudioWorkletNode(audioContext, "vad-processor", {
+            numberOfInputs: 1,
+            numberOfOutputs: 0,
+            channelCount: 1,
+            channelCountMode: "explicit",
+            channelInterpretation: "discrete",
+          });
+
+          source.connect(worklet);
+
+          worklet.port.onmessage = (event) => {
+            const { buffer } = event.data;
+            // Send buffer to the worker for VAD/transcription
+            worker.current?.postMessage({ buffer });
           };
 
-          recorderRef.current.onstop = () => {
-            setRecording(false);
-          };
-
-          recorderRef.current.onerror = (error) => {
-            console.error('MediaRecorder error:', error);
-            if (window.electron) {
-              ipcRenderer.send('audio-error', error.message);
-            }
-          };
+          setStream(stream); // If you need to keep the stream for toggling
+          localStream = stream;
         })
         .catch((err) => {
-          console.error("The following error occurred: ", err);
-          if (window.electron) {
-            ipcRenderer.send('audio-error', err.message);
-          }
+          setError(err.message);
+          console.error(err);
         });
     } else {
       const error = "getUserMedia not supported on your browser!";
+      setError(error);
       console.error(error);
-      if (window.electron) {
-        ipcRenderer.send('audio-error', error);
-      }
     }
 
     return () => {
-      recorderRef.current?.stop();
-      recorderRef.current = null;
+      ignore = true;
+      if (audioContext) audioContext.close();
+      if (source) source.disconnect();
+      if (worklet) worklet.disconnect();
+      if (localStream) localStream.getTracks().forEach((track) => track.stop());
     };
   }, []);
-
-  useEffect(() => {
-    if (!recorderRef.current) return;
-    if (!recording) return;
-    if (isProcessing) return;
-    if (status !== "ready") return;
-
-    if (chunks.length > 0) {
-      // Generate from data
-      const blob = new Blob(chunks, { type: recorderRef.current.mimeType });
-
-      const fileReader = new FileReader();
-
-      fileReader.onloadend = async () => {
-        const arrayBuffer = fileReader.result;
-        const decoded =
-          await audioContextRef.current.decodeAudioData(arrayBuffer);
-        let audio = decoded.getChannelData(0);
-        if (audio.length > MAX_SAMPLES) {
-          // Get last MAX_SAMPLES
-          audio = audio.slice(-MAX_SAMPLES);
-        }
-
-        worker.current.postMessage({
-          type: "generate",
-          data: { audio, language },
-        });
-      };
-      fileReader.readAsArrayBuffer(blob);
-    } else {
-      recorderRef.current?.requestData();
-    }
-  }, [status, recording, isProcessing, chunks, language]);
 
   // Add toggle function to handle both icon and visualizer clicks
   const toggleVisualizer = () => {
@@ -577,7 +619,7 @@ function App() {
       ipcRenderer.send('toggle-fullscreen');
     }
   };
- 
+
 
   // Qwen3 worker state
   const workerQwen3 = useRef(null);
@@ -632,13 +674,13 @@ function App() {
         } else if (status === 'log') {
           console.log('[qwen3-worker]', log);
         } else if (status === 'update') {
-   
+
           console.log('Qwen3 buffering Output:', output);
-          setQwen3OutputStream(prev => prev + " " + output);  
-      
+          setQwen3OutputStream(prev => prev + " " + output);
+
         } else if (status === 'complete') {
-          setQwen3OutputStream('' ); 
-        
+          setQwen3OutputStream('');
+
           setIsQwen3Loading(false);
           setQwen3ProgressItems([]);
           console.log('Qwen3 Output:', output);
@@ -786,7 +828,7 @@ function App() {
 
           {/* Remove the old floating language selector and icon buttons below the header */}
           {/* Target Window Indicator */}
-          <div className="flex items-center ml-4 gap-2 app-region-no-drag">
+          <div className="hidden flex items-center ml-4 gap-2 app-region-no-drag">
             <LanguageSelector
               language={language}
               setLanguage={setLanguage}
@@ -926,8 +968,8 @@ function App() {
                       key={idx}
                       className={
                         idx === 0
-                          ? ' -app-region-no-drag  text-gray-800 dark:text-dark-100 font-mono break-words'
-                          : ' -app-region-no-drag  text-gray-800 dark:text-dark-100 mt-2 break-words'
+                          ? ' -app-region-no-drag  text-white-800 light:text-light-100 font-mono break-words'
+                          : ' -app-region-no-drag  text-white-800 light:text-light-100 mt-2 break-words'
                       }
                     >
                       {para}
@@ -960,7 +1002,10 @@ function App() {
                       const url = URL.createObjectURL(blob);
                       const a = document.createElement('a');
                       a.href = url;
-                      a.download = 'whispero-transcript.txt';
+                      const now = new Date();
+                      const pad = (n) => n.toString().padStart(2, '0');
+                      const dateStr = `${now.getFullYear()}${pad(now.getMonth() + 1)}${pad(now.getDate())}-${pad(now.getHours())}${pad(now.getMinutes())}${pad(now.getSeconds())}`;
+                      a.download = `whispero-transcript-${dateStr}.txt`;
                       document.body.appendChild(a);
                       a.click();
                       setTimeout(() => {
