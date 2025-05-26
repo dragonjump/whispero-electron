@@ -275,7 +275,7 @@ function App() {
   // Initialize worker immediately
   useEffect(() => {
     if (!worker.current) {
-      worker.current = new Worker(new URL("./moonshine-worker.js", import.meta.url), {
+      worker.current = new Worker(new URL("./workers/moonshine-worker.js", import.meta.url), {
         type: "module",
       });
       worker.current.onmessage = async (e) => {
@@ -361,7 +361,7 @@ function App() {
 
   useEffect(() => {
     if (!workerSmol.current) {
-      workerSmol.current = new Worker(new URL("./smol-worker.js", import.meta.url), {
+      workerSmol.current = new Worker(new URL("./workers/smol-worker.js", import.meta.url), {
         type: "module",
       });
       smolReadyRef.current = false;
@@ -506,7 +506,7 @@ function App() {
 
           // Load your AudioWorklet processor
           await audioContext.audioWorklet.addModule(
-            new URL("./moonshine-processor.js", import.meta.url)
+            new URL("./workers/moonshine-processor.js", import.meta.url)
           );
 
           worklet = new AudioWorkletNode(audioContext, "vad-processor", {
@@ -637,7 +637,7 @@ function App() {
 
   // useEffect(() => {
   //   if (!workerQwen3.current) {
-  //     workerQwen3.current = new Worker(new URL("./qwen3-worker.js", import.meta.url), {
+  //     workerQwen3.current = new Worker(new URL("./workers/qwen3-worker.js", import.meta.url), {
   //       type: "module",
   //     });
   //     qwen3ReadyRef.current = false;
@@ -697,7 +697,7 @@ function App() {
   //   }
   //   // Gemma3 worker init
   //   // if (!workerGemma3.current) {
-  //     // workerGemma3.current = new Worker(new URL("./gemma3-worker.js", import.meta.url), {
+  //     // workerGemma3.current = new Worker(new URL("./workers/gemma3-worker.js", import.meta.url), {
   //     //   type: "module",
   //     // });
   //     //   gemma3ReadyRef.current = false;
