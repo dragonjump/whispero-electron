@@ -14,5 +14,10 @@ export default defineConfig({
     ]),
     renderer(),
   ],
-  base: process.env.NODE_ENV === 'development' ? '/' : './',
+  base: process.env.NODE_ENV === 'development' ? '/' : './', 
+   worker: {
+    format: 'es'
+  },  build: {
+    target: 'esnext', // or 'es2022'
+  }
 });
