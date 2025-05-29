@@ -1,6 +1,6 @@
 # Whispero
 
-**Version: v0.9.6**
+**Version: v0.9.7**
 
 Whispero is a modern, privacy-first, open source voice-to-text desktop application powered by Electron, React, and WebGPU. All processing is done locally on your device—no data ever leaves your computer.
 
@@ -68,9 +68,9 @@ Whispero is open source, distributed under the [LICENSE](./LICENSE). Provided as
 
 ---
 
-## 🙏 Acknowledgements
-- [OpenAI Whisper](https://github.com/openai/whisper)
+## 🙏 Acknowledgements 
 - [Electron](https://www.electronjs.org/)
+- [Moonshine whisper](http://moonshine.web)
 - [React](https://react.dev/)
 - [Tailwind CSS](https://tailwindcss.com/)
 
