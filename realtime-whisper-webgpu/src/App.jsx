@@ -1,11 +1,14 @@
 import { useEffect, useState, useRef, useCallback } from "react";
 import { ipcRenderer } from 'electron';
 import copy from 'clipboard-copy';
+import copyToClipboard from './utils/copyToClipboard';
+import {downloadFile} from './utils/copyToClipboard';
 
 import { AudioVisualizer } from "./components/AudioVisualizer";
 import Progress from "./components/Progress";
 import { LanguageSelector } from "./components/LanguageSelector";
 import { WindowControls } from "./components/WindowControls";
+import WorkerControl from "./components/WorkerControl";
 
 // Import icons
 import { FaMicrophone, FaMicrophoneSlash, FaPlay, FaStop, FaChartBar, FaPaste, FaBug } from 'react-icons/fa';
@@ -131,9 +134,7 @@ function DebugPanel({ targetWindow, isAutoPasteEnabled, pasteStatus, toggleAutoP
 function App() {
   // Create a reference to the worker object.
   const worker = useRef(null);
-  const workerSmol = useRef(null);
   const recorderRef = useRef(null);
-  const smolReadyRef = useRef(false);
 
   // Model loading and progress
   const [status, setStatus] = useState(null);
@@ -177,73 +178,7 @@ function App() {
     textRef.current = text;
   }, [text]);
 
-  // Update copyToClipboard function
-  const copyToClipboard = async (textToCopy) => {
-    if (!textToCopy) return;
 
-    const now = Date.now();
-    if (now - lastCopyTime < COPY_COOLDOWN) {
-      console.log('Copy cooldown in effect');
-      return false;
-    }
-
-    try {
-      if (window.electron) {
-        // Use Electron IPC for desktop app
-        return new Promise((resolve) => {
-          const timeoutId = setTimeout(() => {
-            ipcRenderer.removeListener('clipboard-operation-status', handleStatus);
-            resolve(false);
-            setPasteStatus({
-              success: false,
-              error: 'Clipboard operation timed out',
-              timestamp: Date.now()
-            });
-          }, 2000);
-
-          const handleStatus = (_, status) => {
-            clearTimeout(timeoutId);
-            ipcRenderer.removeListener('clipboard-operation-status', handleStatus);
-
-            if (status.success) {
-              setLastCopyTime(now);
-              setPasteStatus({
-                success: true,
-                timestamp: Date.now()
-              });
-            } else {
-              setPasteStatus({
-                success: false,
-                error: status.error || 'Failed to copy text',
-                timestamp: Date.now()
-              });
-            }
-            resolve(status.success);
-          };
-
-          ipcRenderer.on('clipboard-operation-status', handleStatus);
-          ipcRenderer.send('copy-to-clipboard', textToCopy);
-        });
-      } else {
-        // Use clipboard-copy for browser environments
-        await copy(textToCopy);
-        setLastCopyTime(now);
-        setPasteStatus({
-          success: true,
-          timestamp: Date.now()
-        });
-        return true;
-      }
-    } catch (err) {
-      console.error('Failed to copy text:', err);
-      setPasteStatus({
-        success: false,
-        error: err.message || 'Failed to copy text',
-        timestamp: Date.now()
-      });
-      return false;
-    }
-  };
 
   // Function to toggle listening state
   const toggleListeningSwitchOff = (isOff) => {
@@ -358,132 +293,6 @@ function App() {
       };
     }
   }, []);
-
-  useEffect(() => {
-    if (!workerSmol.current) {
-      workerSmol.current = new Worker(new URL("./workers/smol-worker.js", import.meta.url), {
-        type: "module",
-      });
-      smolReadyRef.current = false;
-      // Listen for status/log messages
-      workerSmol.current.onmessage = (event) => {
-        const { status, log, output, error } = event.data;
-        if (status === 'ready') {
-          smolReadyRef.current = true;
-          console.log('[smol-worker] Ready');
-          // Now safe to send input
-          // workerSmol.current.postMessage({ input: 'Once upon a time...' });
-        } else if (status === 'loading') {
-          console.log('[smol-worker] Loading...');
-        } else if (status === 'error') {
-          console.error('[smol-worker] Error:', event.data.error);
-        } else if (status === 'log') {
-          console.log('[smol-worker]', log);
-        } else if (output) {
-          setText(output);
-          console.log('Generated Text:', output);
-        } else if (error) {
-          console.error('[smol-worker] Error:', error);
-        }
-      };
-      // Start loading the model
-      workerSmol.current.postMessage({ type: 'load' });
-    }
-  }, []);
-
-  // Setup worker message handlers
-  // const setupWorkerHandlers0 = () => {
-  //   worker.current.addEventListener("message", async (e) => {
-  //     switch (e.data.status) {
-  //       case "loading":
-  //         setStatus("loading");
-  //         setLoadingMessage(e.data.message || "Loading models...");
-  //         console.log('[Worker Debug] Loading:', e.data.message);
-  //         break;
-  //       case "initiate":
-  //         setProgressItems((prev) => [...prev, e.data]);
-  //         break;
-  //       case "progress":
-  //         setProgressItems((prev) =>
-  //           prev.map((item) => {
-  //             if (item.file === e.data.file) {
-  //               return { ...item, ...e.data };
-  //             }
-  //             return item;
-  //           }),
-  //         );
-  //         // console.log('[Worker Debug] Progress:', e.data);
-  //         break;
-  //       case "done":
-  //         setProgressItems((prev) =>
-  //           prev.filter((item) => item.file !== e.data.file),
-  //         );
-  //         break;
-  //       case "ready":
-  //         setStatus("ready");
-  //         recorderRef.current?.start();
-  //         // console.log('[Worker Debug] Ready');
-  //         break;
-  //       case "start":
-  //         setIsProcessing(true);
-  //         recorderRef.current?.requestData();
-  //         console.log('[Worker Debug] start');
-  //         break;
-  //       case "update":
-  //         const { tps } = e.data;
-  //         setTps(tps);
-  //         console.log('[Worker Debug] update tps', tps);
-  //         break;
-  //       case "complete":
-  //         // Always treat output as array and join to string
-  //         const newTextArr = e.data.output;
-  //         const newText = Array.isArray(newTextArr) ? newTextArr.join(' ').trim() : (newTextArr || '').trim();
-
-  //         // Don't update if text hasn't changed
-  //         const currentText = textRef.current;
-  //         console.log('[Text Debug] newText:', newText);
-  //         console.log('[Text Debug] text:', currentText);
-  //         if (newText === currentText) {
-  //           console.log('[Text Debug] Text unchanged, skipping update');
-  //           setIsProcessing(false);
-  //           return;
-  //         }
-
-  //         if (typeof currentText === 'string' && currentText.includes(newText)) {
-  //           console.log('[Text Debug] Text unchanged, skipping update');
-  //           setIsProcessing(false);
-  //           return;
-  //         }
-  //         const safeNewText = newText.toLowerCase().trim();
-  //         const safeOldText = (typeof currentText === 'string' ? currentText : '').toLowerCase().trim();
-  //         if (safeOldText.indexOf(safeNewText) > -1) {
-  //           console.log('[Text Debug] Same match found, skipping update');
-  //           setIsProcessing(false);
-  //           return;
-  //         }
-  //         const combinedText = currentText + "\n\n\n--------------\n\n\n" + newText;
-  //         // Append new transcription to the existing text
-  //         await setText(combinedText);
-  //         // setText( newText);
-
-  //         setIsProcessing(false);
-
-  //         // Copy text and handle result
-  //         const copySuccess = await copyToClipboard(combinedText);
-  //         if (copySuccess && window.electron) {
-  //         }
-  //         if (combinedText) {
-  //           ipcRenderer.send('text-recognized', combinedText);
-  //         }
-  //         break;
-  //       case "error":
-  //         console.error('Worker error:', e.data.error);
-  //         setError(e.data.error);
-  //         setIsProcessing(false);
-  //         break;
-  //     }
-  //   });
-  // };
 
   // --- New AudioWorklet-based real-time audio streaming ---
   useEffect(() => {
@@ -619,146 +428,6 @@ function App() {
       ipcRenderer.send('toggle-fullscreen');
     }
   };
-
-
-  // Qwen3 worker state
-  // const workerQwen3 = useRef(null);
-  // const qwen3ReadyRef = useRef(false);
-  // const [isQwen3Loading, setIsQwen3Loading] = useState(false);
-  // const [isQwen3Initialized, setIsQwen3Initialized] = useState(false);
-  // const [qwen3ProgressItems, setQwen3ProgressItems] = useState([]);
-  // const [qwen3OutputStream, setQwen3OutputStream] = useState('');
-
-  // Gemma3 worker state
-  // const workerGemma3 = useRef(null);
-  // const gemma3ReadyRef = useRef(false);
-  // const [isGemma3Loading, setIsGemma3Loading] = useState(false);
-  // const [isGemma3Initialized, setIsGemma3Initialized] = useState(false);
-
-  // useEffect(() => {
-  //   if (!workerQwen3.current) {
-  //     workerQwen3.current = new Worker(new URL("./workers/qwen3-worker.js", import.meta.url), {
-  //       type: "module",
-  //     });
-  //     qwen3ReadyRef.current = false;
-  //     workerQwen3.current.onmessage = async (event) => {
-  //       const { status, log, output, error } = event.data;
-  //       if (status === 'ready') {
-  //         qwen3ReadyRef.current = true;
-  //         setIsQwen3Initialized(true);
-  //         setQwen3ProgressItems([]);
-  //         setIsQwen3Loading(false);
-  //         console.log('[qwen3-worker] Ready');
-  //       } else if (status === 'loading') {
-  //         setIsQwen3Loading(true);
-  //         setQwen3ProgressItems([]);
-  //         console.log('[qwen3-worker] Loading...');
-  //       } else if (status === 'progress') {
-  //         setQwen3ProgressItems(prev => {
-  //           // Update or add the progress item by file
-  //           const idx = prev.findIndex(item => item.file === event.data.file);
-  //           let updated;
-  //           if (idx !== -1) {
-  //             updated = [...prev];
-  //             updated[idx] = { ...updated[idx], ...event.data };
-  //           } else {
-  //             updated = [...prev, event.data];
-  //           }
-  //           console.log('[Qwen3 Progress Debug] prev:', prev, 'new:', updated);
-  //           return updated;
-  //         });
-  //       } else if (status === 'error') {
-  //         setIsQwen3Loading(false);
-  //         setQwen3ProgressItems([]);
-  //         console.error('[qwen3-worker] Error:', event.data.error);
-  //       } else if (status === 'log') {
-  //         console.log('[qwen3-worker]', log);
-  //       } else if (status === 'update') {
-  //         console.log('Qwen3 buffering Output:', output);
-  //         setQwen3OutputStream(prev => prev + " " + output);
-  //       } else if (status === 'complete') {
-  //         setQwen3OutputStream('');
-  //         setIsQwen3Loading(false);
-  //         setQwen3ProgressItems([]);
-  //         console.log('Qwen3 Output:', output);
-  //         setText(output);
-  //         const copySuccess = await copyToClipboard(output);
-  //         if (copySuccess && window.electron) { }
-  //         if (output) {
-  //           ipcRenderer.send('text-recognized', output);
-  //         }
-  //       } else if (error) {
-  //         setIsQwen3Loading(false);
-  //         setQwen3ProgressItems([]);
-  //         console.error('[qwen3-worker] Error:', error);
-  //       }
-  //     };
-  //     workerQwen3.current.postMessage({ type: 'load' });
-  //   }
-  //   // Gemma3 worker init
-  //   // if (!workerGemma3.current) {
-  //     // workerGemma3.current = new Worker(new URL("./workers/gemma3-worker.js", import.meta.url), {
-  //     //   type: "module",
-  //     // });
-  //     //   gemma3ReadyRef.current = false;
-  //     //   workerGemma3.current.onmessage = async (event) => {
-  //     //     const { status, log, output, error } = event.data;
-  //     //     if (status === 'ready') {
-  //     //       gemma3ReadyRef.current = true;
-  //     //       setIsGemma3Initialized(true);
-  //     //       console.log('[gemma3-worker] Ready');
-  //     //     } else if (status === 'loading') {
-  //     //       console.log('[gemma3-worker] Loading...');
-  //     //     } else if (status === 'error') {
-  //     //       setIsGemma3Loading(false);
-  //     //       console.error('[gemma3-worker] Error:', event.data.error);
-  //     //     } else if (status === 'log') {
-  //     //       console.log('[gemma3-worker]', log);
-  //     //     } else if (status === 'complete') {
-  //     //       setIsGemma3Loading(false);
-  //     //       console.log('Gemma3 Output:', output);
-  //     //       setText(output);
-  //     //       const copySuccess = await copyToClipboard(output);
-  //     //       if (copySuccess && window.electron) {}
-  //     //       if (output) {
-  //     //         ipcRenderer.send('text-recognized', output);
-  //     //       }
-  //     //     } else if (error) {
-  //     //       setIsGemma3Loading(false);
-  //     //       console.error('[gemma3-worker] Error:', error);
-  //     //     }
-  //     //   };
-  //     //   workerGemma3.current.postMessage({ type: 'load' });
-  //   // }
-  // }, []);
-
-  // Handler for Smol worker (replaces Qwen3)
-  const [isSmolLoading, setIsSmolLoading] = useState(false);
-  const handleSmol = () => {
-    toggleListeningSwitchOff(true);
-    if (workerSmol.current && smolReadyRef.current) {
-      setIsSmolLoading(true);
-      workerSmol.current.postMessage({ input: text });
-    } else {
-      console.warn('smol-worker not ready');
-    }
-  };
-
-  // Listen for Smol worker output to reset loading state
-  useEffect(() => {
-    if (!workerSmol.current) return;
-    const handler = (event) => {
-      const { status, output } = event.data;
-      if (status === 'ready' || status === 'loading') {
-        setIsSmolLoading(status === 'loading');
-      }
-      if (output) {
-        setIsSmolLoading(false);
-      }
-    };
-    workerSmol.current.addEventListener('message', handler);
-    return () => workerSmol.current.removeEventListener('message', handler);
-  }, []);
 
   return (
     <div
@@ -907,23 +576,12 @@ function App() {
             {/* Transcribed text area */}
             {text && (
               <div className="w-full max-w-2xl">
-                {/* Smol worker button replaces Qwen3 */}
-                <button
-                  className="right-2 hover:bg-blue-600 text-white px-4 py-2 rounded transition-colors text-sm font-medium"
-                  onClick={handleSmol}
-                  disabled={isSmolLoading}
-                >
-                  {isSmolLoading ? (
-                    <span className="animate-spin inline-block align-middle" style={{ opacity: 0.5 }}>
-                      <svg className="w-5 h-5 text-blue-500" fill="none" viewBox="0 0 24 24">
-                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8z"></path>
-                      </svg>
-                    </span>
-                  ) : (
-                    <>🪶 Smol LLM</>
-                  )}
-                </button>
+                {/* Smol worker control component */}
+                <WorkerControl
+                  text={text}
+                  setText={setText}
+                  toggleListeningSwitchOff={toggleListeningSwitchOff}
+                />
                 <div
                   className="app-region-no-drag bg-gray-50 dark:bg-dark-600 rounded-lg p-4 h-48 overflow-y-auto transition-colors shadow-inner custom-scrollbar transcribed-scrollbar"
                   style={{ fontFamily: 'inherit', fontSize: '1.08em' }}
@@ -967,20 +625,7 @@ function App() {
                   <button
                     className="bg-indigo-500 hover:bg-indigo-600 text-white px-4 py-2 rounded transition-colors text-sm font-medium"
                     onClick={() => {
-                      const blob = new Blob([text], { type: 'text/plain' });
-                      const url = URL.createObjectURL(blob);
-                      const a = document.createElement('a');
-                      a.href = url;
-                      const now = new Date();
-                      const pad = (n) => n.toString().padStart(2, '0');
-                      const dateStr = `${now.getFullYear()}${pad(now.getMonth() + 1)}${pad(now.getDate())}-${pad(now.getHours())}${pad(now.getMinutes())}${pad(now.getSeconds())}`;
-                      a.download = `whispero-transcript-${dateStr}.txt`;
-                      document.body.appendChild(a);
-                      a.click();
-                      setTimeout(() => {
-                        document.body.removeChild(a);
-                        URL.revokeObjectURL(url);
-                      }, 0);
+                      downloadFile(text);
                     }}
                   >
                     Save
