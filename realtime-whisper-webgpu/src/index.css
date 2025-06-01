@@ -196,3 +196,15 @@ button, input, select, a {
 .dark .transcribed-scrollbar {
   scrollbar-color: #6366f1 #232946;
 }
+
+#about-logo {
+  user-select: none;
+  -webkit-user-select: none;
+  -moz-user-select: none;
+  -ms-user-select: none;
+  -webkit-user-drag: none;
+}
+
+body.modal-open {
+  overflow: hidden !important;
+}

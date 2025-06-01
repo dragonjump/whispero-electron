@@ -1,5 +1,5 @@
 import { useEffect, useState, useRef, useCallback } from "react";
-import { ipcRenderer } from 'electron';
+import { ipcRenderer, shell } from 'electron';
 import copy from 'clipboard-copy';
 import copyToClipboard from './utils/copyToClipboard';
 import {downloadFile} from './utils/copyToClipboard';
@@ -178,7 +178,8 @@ function App() {
     textRef.current = text;
   }, [text]);
 
-
+  // Auto-paste
+  const [showAbout, setShowAbout] = useState(false);
 
   // Function to toggle listening state
   const toggleListeningSwitchOff = (isOff) => {
@@ -429,6 +430,15 @@ function App() {
     }
   };
 
+  useEffect(() => {
+    if (showAbout) {
+      document.body.classList.add('modal-open');
+    } else {
+      document.body.classList.remove('modal-open');
+    }
+    return () => document.body.classList.remove('modal-open');
+  }, [showAbout]);
+
   return (
     <div
       className="h-screen rounded-2xl overflow-hidden shadow-2xl"
@@ -645,11 +655,47 @@ function App() {
       )}
 
       {/* Logo in bottom right corner */}
-      <img
-        src="whispero-logo.png"
-        alt="Whispero Logo"
-        className="fixed bottom-2 right-2 w-8 h-8 opacity-30 pointer-events-none"
-      />
+      <button
+        id='about-logo'
+        onClick={() => setShowAbout(true)}
+        className="fixed bottom-2 right-2 w-10 h-10 opacity-60 bg-gray-800/50 hover:bg-gray-700/50 rounded-full flex items-center justify-center transition select-none z-50"
+        style={{ userSelect: 'none' }}
+        title="About Whispero"
+      >
+        <img
+          src="whispero-logo.png"
+          alt="Whispero Logo"
+          className="w-8 h-8 pointer-events-none"
+          draggable="false"
+        />
+      </button>
+
+      {/* About Modal */}
+      {showAbout && (
+        <div className="fixed inset-0 flex items-center justify-center bg-black/60 z-50">
+          <div className="bg-gray-900 text-white rounded-lg shadow-lg p-8 max-w-xs w-full relative">
+            <button
+              className="absolute top-2 right-2 text-gray-400 hover:text-white text-xl"
+              onClick={() => setShowAbout(false)}
+              aria-label="Close"
+            >
+              ×
+            </button>
+            <div className="flex flex-col items-center gap-2">
+              <img src="whispero-logo.png" alt="Whispero Logo" className="w-12 h-12 mb-2 select-none pointer-events-none" draggable="false" />
+              <h2 className="text-lg font-bold mb-1">Whispero</h2>
+              <div className="text-sm mb-2">Version <span className="font-mono">0.9.8</span></div>
+              <button
+                onClick={() => shell.openExternal('https://github.com/dragonjump/whispero-electron')}
+                className="text-indigo-400 hover:underline text-sm focus:outline-none"
+                style={{ background: 'none', border: 'none', padding: 0, cursor: 'pointer' }}
+              >
+                GitHub Project
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {process.env.NODE_ENV === 'development' && (
         <DebugPanel
