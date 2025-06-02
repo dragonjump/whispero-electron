@@ -54,14 +54,16 @@ Whispero is a modern, privacy-first, open source voice-to-text desktop applicati
 ### Run from Source
 ```bash
 # Clone the repo
-$ git clone https://github.com/yourusername/whispero.git
+$ git clone https://github.com/dragonjump/whispero-electron.git
 $ cd whispero
 
 # Install dependencies
 $ npm install
-
 # Start the app (dev mode)
 $ npm run dev
+ npm install electron-builder --save-dev
+# Build and bundle the app  
+$ npm run pacakge-win
 ```
 
 ---
