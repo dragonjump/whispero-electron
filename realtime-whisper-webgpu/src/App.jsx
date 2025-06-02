@@ -697,14 +697,14 @@ function App() {
         </div>
       )}
 
-      {process.env.NODE_ENV === 'development' && (
+      {/* {process.env.NODE_ENV === 'development' && (
         <DebugPanel
           targetWindow={targetWindow}
           isAutoPasteEnabled={autoPasteEnabled}
           pasteStatus={pasteStatus}
           toggleAutoPaste={toggleAutoPaste}
         />
-      )}
+      )} */}
     </div>
   );
 }

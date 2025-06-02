@@ -106,6 +106,12 @@ async function simulatePaste() {
       await keyboard.type('v');
       await keyboard.releaseKey(Key.LeftControl);
       
+      // Clear selection after paste
+      const win = BrowserWindow.getFocusedWindow();
+      if (win && !win.isDestroyed()) {
+        win.webContents.executeJavaScript('window.getSelection().removeAllRanges();');
+      }
+      
       console.log('[Paste Debug] Native paste completed successfully');
       return true;
     } catch (error) {
@@ -130,6 +136,9 @@ async function simulatePaste() {
         win.webContents.sendInputEvent({ type: 'keyDown', keyCode: 'V', modifiers });
         await new Promise(resolve => setTimeout(resolve, 50));
         win.webContents.sendInputEvent({ type: 'keyUp', keyCode: 'V', modifiers });
+        
+        // Clear selection after paste
+        win.webContents.executeJavaScript('window.getSelection().removeAllRanges();');
         
         console.log('[Paste Debug] Fallback paste completed');
         return true;
