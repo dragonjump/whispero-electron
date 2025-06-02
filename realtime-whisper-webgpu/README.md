@@ -6,9 +6,13 @@ Currently, two official plugins are available:
 
 - [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react/README.md) uses [Babel](https://babeljs.io/) for Fast Refresh
 - [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react-swc) uses [SWC](https://swc.rs/) for Fast Refresh
+Demo video
+```
+whispero-demo-video.mp4
+```
 Bundle app
 ```
  npm install electron-builder --save-dev
-  npx electron-builder --win
+ npx electron-builder --win
 
   ```
