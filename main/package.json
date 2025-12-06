@@ -1,14 +1,13 @@
 {
   "name": "realtime-webgpu",
   "private": true,
-  "version": "0.9.8",
+  "version": "0.9.9",
   "type": "module",
   "main": "electron/main.js",
   "scripts": {
     "dev": "vite",
     "build": "vite build",
-    "package-win": "npm run build && npx electron-builder --win", 
-  
+    "package-win": "npm run build && npx electron-builder --win",
     "lint": "eslint . --ext js,jsx --report-unused-disable-directives --max-warnings 0",
     "preview": "vite preview",
     "electron:dev": "concurrently \"vite\" \"electron .\"",
@@ -16,9 +15,10 @@
     "electron:preview": "electron ."
   },
   "dependencies": {
-    "@huggingface/transformers": "3.0.0",
+    "@huggingface/transformers": "^3.1.0",
     "@nut-tree-fork/nut-js": "^4.2.6",
     "electron-store": "^8.1.0",
+    "get-windows": "^9.2.3",
     "react": "^18.2.0",
     "react-dom": "^18.2.0",
     "react-icons": "^5.5.0"

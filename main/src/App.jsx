@@ -2,13 +2,13 @@ import { useEffect, useState, useRef, useCallback } from "react";
 import { ipcRenderer, shell } from 'electron';
 import copy from 'clipboard-copy';
 import copyToClipboard from './utils/copyToClipboard';
-import {downloadFile} from './utils/copyToClipboard';
+import { downloadFile } from './utils/copyToClipboard';
 
 import { AudioVisualizer } from "./components/AudioVisualizer";
 import Progress from "./components/Progress";
 import { LanguageSelector } from "./components/LanguageSelector";
 import { WindowControls } from "./components/WindowControls";
-import WorkerControl from "./components/WorkerControl";
+
 
 // Import icons
 import { FaMicrophone, FaMicrophoneSlash, FaPlay, FaStop, FaChartBar, FaPaste, FaBug } from 'react-icons/fa';
@@ -219,7 +219,8 @@ function App() {
         if (data.error) {
           console.error('[Worker Event] Received onmessage error:', data);
           setProgressItems([]); // Clear progress on error
-          return onError(data.error);
+          setError(data.error?.message || 'Worker error');
+          return;
         }
         if (data.type === "info") {
           console.warn('[Worker Event] Received onmessage info:', data);
@@ -586,12 +587,6 @@ function App() {
             {/* Transcribed text area */}
             {text && (
               <div className="w-full max-w-2xl">
-                {/* Smol worker control component */}
-                <WorkerControl
-                  text={text}
-                  setText={setText}
-                  toggleListeningSwitchOff={toggleListeningSwitchOff}
-                />
                 <div
                   className="app-region-no-drag bg-gray-50 dark:bg-dark-600 rounded-lg p-4 h-48 overflow-y-auto transition-colors shadow-inner custom-scrollbar transcribed-scrollbar"
                   style={{ fontFamily: 'inherit', fontSize: '1.08em' }}
@@ -684,7 +679,7 @@ function App() {
             <div className="flex flex-col items-center gap-2">
               <img src="whispero-logo.png" alt="Whispero Logo" className="w-12 h-12 mb-2 select-none pointer-events-none" draggable="false" />
               <h2 className="text-lg font-bold mb-1">Whispero</h2>
-              <div className="text-sm mb-2">Version <span className="font-mono">0.9.8</span></div>
+              <div className="text-sm mb-2">Version <span className="font-mono">0.9.9</span></div>
               <button
                 onClick={() => shell.openExternal('https://github.com/dragonjump/whispero-electron')}
                 className="text-indigo-400 hover:underline text-sm focus:outline-none"

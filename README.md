@@ -1,7 +1,7 @@
 # Whispero
 whispero.my
 
-**Version: v0.9.8**
+**Version: v0.9.9**
 
 Whispero is a modern, privacy-first, open source voice-to-text desktop application powered by Electron, React, and WebGPU. All processing is done locally on your device—no data ever leaves your computer.
 
