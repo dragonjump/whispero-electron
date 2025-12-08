@@ -131,10 +131,90 @@ function DebugPanel({ targetWindow, isAutoPasteEnabled, pasteStatus, toggleAutoP
   );
 }
 
+// Model Selection Screen Component
+function ModelSelectionScreen({ onSelectModel }) {
+  return (
+    <div className="h-screen flex items-center justify-center" style={{ background: 'rgba(24,24,27,0.97)' }}>
+      <div className="text-center px-4 max-w-2xl">
+        <h1 className="text-4xl font-bold mb-4 text-white/90">Whispero</h1>
+        <p className="text-lg text-gray-400 mb-8">
+          Choose your transcription model
+        </p>
+        
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mt-8">
+          {/* Moonshine Option */}
+          <button
+            onClick={() => onSelectModel('moonshine')}
+            className="group relative bg-gray-800/50 hover:bg-gray-700/50 border-2 border-gray-700 hover:border-indigo-500 rounded-xl p-6 transition-all duration-200 text-left"
+          >
+            <div className="flex items-center gap-3 mb-3">
+              <span className="text-3xl">🌙</span>
+              <h2 className="text-xl font-semibold text-white">Moonshine</h2>
+            </div>
+            <p className="text-sm text-gray-400 mb-2">
+              Fast, real-time transcription with Voice Activity Detection (VAD)
+            </p>
+            <ul className="text-xs text-gray-500 space-y-1 mt-3">
+              <li>• Real-time streaming</li>
+              <li>• Built-in VAD</li>
+              <li>• Lower latency</li>
+              <li>• English optimized</li>
+            </ul>
+            <div className="mt-4 text-indigo-400 text-sm font-medium opacity-0 group-hover:opacity-100 transition-opacity">
+              Click to select →
+            </div>
+          </button>
+
+          {/* Whisper Option */}
+          <button
+            onClick={() => onSelectModel('whisper')}
+            className="group relative bg-gray-800/50 hover:bg-gray-700/50 border-2 border-gray-700 hover:border-indigo-500 rounded-xl p-6 transition-all duration-200 text-left"
+          >
+            <div className="flex items-center gap-3 mb-3">
+              <span className="text-3xl">🎤</span>
+              <h2 className="text-xl font-semibold text-white">Whisper</h2>
+            </div>
+            <p className="text-sm text-gray-400 mb-2">
+              Multilingual transcription with high accuracy
+            </p>
+            <ul className="text-xs text-gray-500 space-y-1 mt-3">
+              <li>• Multilingual support</li>
+              <li>• High accuracy</li>
+              <li>• Language selection</li>
+              <li>• Batch processing</li>
+            </ul>
+            <div className="mt-4 text-indigo-400 text-sm font-medium opacity-0 group-hover:opacity-100 transition-opacity">
+              Click to select →
+            </div>
+          </button>
+        </div>
+        
+        <p className="text-xs text-gray-500 mt-8">
+          You can change this later in settings
+        </p>
+      </div>
+    </div>
+  );
+}
+
 function App() {
-  // Create a reference to the worker object.
-  const worker = useRef(null);
-  const recorderRef = useRef(null);
+  // Model selection - null means show selection screen
+  const [currentModel, setCurrentModel] = useState(null); // null, 'moonshine', or 'whisper'
+  
+  // Create references to worker objects (only one will be used)
+  const workerMoonshine = useRef(null);
+  const workerWhisper = useRef(null);
+  
+  // Separate refs for each model to avoid conflicts
+  // Moonshine refs
+  const audioContextWorkletRef = useRef(null);
+  const workletNodeRef = useRef(null);
+  const streamMoonshineRef = useRef(null);
+  
+  // Whisper refs
+  const recorderRefWhisper = useRef(null);
+  const audioContextRefWhisper = useRef(null);
+  const streamWhisperRef = useRef(null);
 
   // Model loading and progress
   const [status, setStatus] = useState(null);
@@ -153,9 +233,8 @@ function App() {
   const [recording, setRecording] = useState(false);
   const [isProcessing, setIsProcessing] = useState(false);
   const [chunks, setChunks] = useState([]);
-  const [stream, setStream] = useState(null);
+  const [stream, setStream] = useState(null); // Current active stream for visualizer
   const [isListening, setIsListening] = useState(true);
-  const audioContextRef = useRef(null);
   const [showVisualizer, setShowVisualizer] = useState(false);
 
   // Auto-paste
@@ -185,50 +264,94 @@ function App() {
   const toggleListeningSwitchOff = (isOff) => {
     if (isOff) {
       // Stop listening
-      recorderRef.current?.stop();
-      stream?.getTracks().forEach(track => track.enabled = false);
+      if (currentModel === 'whisper') {
+        recorderRefWhisper.current?.stop();
+        streamWhisperRef.current?.getTracks().forEach(track => track.enabled = false);
+      } else {
+        streamMoonshineRef.current?.getTracks().forEach(track => track.enabled = false);
+      }
       setIsListening(false);
     } else {
       // Start listening
-      stream?.getTracks().forEach(track => track.enabled = true);
-      recorderRef.current?.start();
+      if (currentModel === 'whisper') {
+        streamWhisperRef.current?.getTracks().forEach(track => track.enabled = true);
+        if (recorderRefWhisper.current && status === 'ready') {
+          recorderRefWhisper.current.start();
+        }
+      } else {
+        streamMoonshineRef.current?.getTracks().forEach(track => track.enabled = true);
+      }
       setIsListening(true);
     }
   };
+  
   const toggleListening = () => {
     if (isListening) {
       // Stop listening
-      recorderRef.current?.stop();
-      stream?.getTracks().forEach(track => track.enabled = false);
+      if (currentModel === 'whisper') {
+        recorderRefWhisper.current?.stop();
+        streamWhisperRef.current?.getTracks().forEach(track => track.enabled = false);
+      } else {
+        streamMoonshineRef.current?.getTracks().forEach(track => track.enabled = false);
+      }
     } else {
       // Start listening
-      stream?.getTracks().forEach(track => track.enabled = true);
-      recorderRef.current?.start();
+      if (currentModel === 'whisper') {
+        streamWhisperRef.current?.getTracks().forEach(track => track.enabled = true);
+        if (recorderRefWhisper.current && status === 'ready') {
+          recorderRefWhisper.current.start();
+        }
+      } else {
+        streamMoonshineRef.current?.getTracks().forEach(track => track.enabled = true);
+      }
     }
     setIsListening(!isListening);
   };
 
-  // Initialize worker immediately
+  // Handle model selection
+  const handleModelSelection = (model) => {
+    setCurrentModel(model);
+    // Save preference
+    if (window.electron) {
+      window.electron.store.set('selectedModel', model);
+    }
+  };
+
+  // Load saved model preference
   useEffect(() => {
-    if (!worker.current) {
-      worker.current = new Worker(new URL("./workers/moonshine-worker.js", import.meta.url), {
+    if (window.electron) {
+      const savedModel = window.electron.store.get('selectedModel');
+      if (savedModel && (savedModel === 'moonshine' || savedModel === 'whisper')) {
+        setCurrentModel(savedModel);
+      }
+    }
+  }, []);
+
+  // Initialize Moonshine worker (only if selected)
+  useEffect(() => {
+    if (!currentModel || currentModel !== 'moonshine') return;
+    if (workerMoonshine.current) return;
+    
+    if (!workerMoonshine.current) {
+      workerMoonshine.current = new Worker(new URL("./workers/moonshine-worker.js", import.meta.url), {
         type: "module",
       });
-      worker.current.onmessage = async (e) => {
+      workerMoonshine.current.onmessage = async (e) => {
+        if (currentModel !== 'moonshine') return; // Only process if active
+        
         const { data } = e;
         if (data.error) {
-          console.error('[Worker Event] Received onmessage error:', data);
-          setProgressItems([]); // Clear progress on error
+          console.error('[Moonshine Worker] Received onmessage error:', data);
+          setProgressItems([]);
           setError(data.error?.message || 'Worker error');
           return;
         }
         if (data.type === "info") {
-          console.warn('[Worker Event] Received onmessage info:', data);
+          console.warn('[Moonshine Worker] Received onmessage info:', data);
           return;
         }
         if (data.type === "progress") {
           setProgressItems((prev) => {
-            // Update or add the progress item by file
             const idx = prev.findIndex(item => item.file === data.file);
             let updated;
             if (idx !== -1) {
@@ -245,26 +368,23 @@ function App() {
           return;
         }
         if (data.type === "status") {
-          console.log('[Worker Event] Received onmessage status:', data);
+          console.log('[Moonshine Worker] Received onmessage status:', data);
           if (data.status === "loading") {
             setStatus("loading");
-            setLoadingMessage(data.message || "Loading AI models...");
-            console.log('[Worker Event] Loading:', data.message);
+            setLoadingMessage(data.message || "Loading Moonshine model...");
           }
           if (data.status === "ready") {
-            setStatus("ready");
-            setLoadingMessage('');
-            console.log('[Worker Event] ready:', data.message);
-          }
-          if (data.status === "ready") {
-            setProgressItems([]); // Clear progress on ready
+            if (currentModel === 'moonshine') {
+              setStatus("ready");
+              setLoadingMessage('');
+              setProgressItems([]);
+            }
           }
           return;
         }
 
-        if (data.type !== "status" && isListening) {
-          console.log('[Worker Event] Received onmessage text:', data);
-
+        if (data.type === "output" && isListening) {
+          console.log('[Moonshine Worker] Received onmessage text:', data);
           const currentText = textRef.current || '';
           const combinedText = currentText + "\n\n\n " + data.message + '';
           await setText(combinedText);
@@ -277,30 +397,152 @@ function App() {
         }
       };
 
-      worker.current.onError = (err) => {
-        console.error('[Worker Event] Worker error event:', err);
+      workerMoonshine.current.onError = (err) => {
+        console.error('[Moonshine Worker] Worker error event:', err);
         setError(err.message || 'Worker error');
       };
 
-
-      console.log('[Worker Event] Event listeners attached');
-      worker.current.postMessage({ type: 'load' });
-
-      // Cleanup
-      return () => {
-        worker.current = null;
-        // worker.current.removeEventListener("message", onMessage);
-        // worker.current.removeEventListener("error", onError);
-        console.log('[Worker Event] Event listeners removed');
-      };
+      console.log('[Moonshine Worker] Event listeners attached');
+      workerMoonshine.current.postMessage({ type: 'load' });
     }
-  }, []);
+  }, [currentModel]);
 
-  // --- New AudioWorklet-based real-time audio streaming ---
+  // Initialize Whisper worker (only if selected)
   useEffect(() => {
+    if (!currentModel || currentModel !== 'whisper') return;
+    if (workerWhisper.current) return;
+    
+    if (!workerWhisper.current) {
+      workerWhisper.current = new Worker(new URL("./workers/whisper-worker.js", import.meta.url), {
+        type: "module",
+      });
+      
+      const setupWhisperHandlers = () => {
+        workerWhisper.current.addEventListener("message", async (e) => {
+          if (currentModel !== 'whisper') return; // Only process if active
+          
+          switch (e.data.status) {
+            case "loading":
+              setStatus("loading");
+              setLoadingMessage(e.data.message || "Loading Whisper model...");
+              console.log('[Whisper Worker] Loading:', e.data.message);
+              break;
+            case "initiate":
+              setProgressItems((prev) => [...prev, e.data]);
+              break;
+            case "progress":
+              setProgressItems((prev) =>
+                prev.map((item) => {
+                  if (item.file === e.data.file) {
+                    return { ...item, ...e.data };
+                  }
+                  return item;
+                }),
+              );
+              break;
+            case "done":
+              setProgressItems((prev) =>
+                prev.filter((item) => item.file !== e.data.file),
+              );
+              break;
+            case "ready":
+              if (currentModel === 'whisper') {
+                setStatus("ready");
+                // Start recorder if listening is enabled
+                if (isListening && recorderRefWhisper.current && recorderRefWhisper.current.state !== 'recording') {
+                  recorderRefWhisper.current.start();
+                }
+                console.log('[Whisper Worker] Ready');
+              }
+              break;
+            case "start":
+              setIsProcessing(true);
+              recorderRefWhisper.current?.requestData();
+              console.log('[Whisper Worker] start');
+              break;
+            case "update":
+              const { tps } = e.data;
+              setTps(tps);
+              console.log('[Whisper Worker] update tps', tps);
+              break;
+            case "complete":
+              const newTextArr = e.data.output;
+              const newText = Array.isArray(newTextArr) ? newTextArr.join(' ').trim() : (newTextArr || '').trim();
+              const currentText = textRef.current;
+              console.log('[Whisper Worker] newText:', newText);
+              console.log('[Whisper Worker] text:', currentText);
+              
+              if (newText === currentText) {
+                console.log('[Whisper Worker] Text unchanged, skipping update');
+                setIsProcessing(false);
+                return;
+              }
+
+              if (typeof currentText === 'string' && currentText.includes(newText)) {
+                console.log('[Whisper Worker] Text unchanged, skipping update');
+                setIsProcessing(false);
+                return;
+              }
+              
+              const safeNewText = newText.toLowerCase().trim();
+              const safeOldText = (typeof currentText === 'string' ? currentText : '').toLowerCase().trim();
+              if (safeOldText.indexOf(safeNewText) > -1) {
+                console.log('[Whisper Worker] Same match found, skipping update');
+                setIsProcessing(false);
+                return;
+              }
+              
+              // const combinedText = currentText + "\n\n\n--------------\n\n\n" + newText;
+
+              
+              const combinedText = newText;
+
+              
+              await setText(combinedText);
+              setIsProcessing(false);
+
+              const copySuccess = await copyToClipboard(combinedText);
+              if (copySuccess && window.electron) { }
+              if (combinedText) {
+                ipcRenderer.send('text-recognized', combinedText);
+              }
+              break;
+            case "error":
+              console.error('Whisper Worker error:', e.data.error);
+              setError(e.data.error);
+              setIsProcessing(false);
+              break;
+          }
+        });
+      };
+      
+      setupWhisperHandlers();
+      workerWhisper.current.postMessage({ type: 'load' });
+    }
+  }, [currentModel]);
+
+  // --- AudioWorklet-based real-time audio streaming for Moonshine ---
+  useEffect(() => {
+    if (!currentModel || currentModel !== 'moonshine') {
+      // Clean up if switching away from moonshine
+      if (audioContextWorkletRef.current) {
+        audioContextWorkletRef.current.close();
+        audioContextWorkletRef.current = null;
+      }
+      if (workletNodeRef.current) {
+        workletNodeRef.current.disconnect();
+        workletNodeRef.current = null;
+      }
+      if (streamMoonshineRef.current) {
+        streamMoonshineRef.current.getTracks().forEach((track) => track.stop());
+        streamMoonshineRef.current = null;
+      }
+      setStream(null);
+      return;
+    }
+    
     let audioContext, source, worklet;
     let ignore = false;
-    let localStream;
 
     if (navigator.mediaDevices.getUserMedia) {
       navigator.mediaDevices
@@ -332,12 +574,14 @@ function App() {
 
           worklet.port.onmessage = (event) => {
             const { buffer } = event.data;
-            // Send buffer to the worker for VAD/transcription
-            worker.current?.postMessage({ buffer });
+            // Send buffer to the moonshine worker for VAD/transcription
+            workerMoonshine.current?.postMessage({ buffer });
           };
 
-          setStream(stream); // If you need to keep the stream for toggling
-          localStream = stream;
+          streamMoonshineRef.current = stream;
+          setStream(stream); // For visualizer
+          audioContextWorkletRef.current = audioContext;
+          workletNodeRef.current = worklet;
         })
         .catch((err) => {
           setError(err.message);
@@ -354,9 +598,153 @@ function App() {
       if (audioContext) audioContext.close();
       if (source) source.disconnect();
       if (worklet) worklet.disconnect();
-      if (localStream) localStream.getTracks().forEach((track) => track.stop());
+      if (streamMoonshineRef.current) {
+        streamMoonshineRef.current.getTracks().forEach((track) => track.stop());
+        streamMoonshineRef.current = null;
+      }
     };
-  }, []);
+  }, [currentModel]);
+
+  // --- MediaRecorder-based audio capture for Whisper ---
+  useEffect(() => {
+    if (!currentModel || currentModel !== 'whisper') {
+      // Clean up if switching away from whisper
+      if (recorderRefWhisper.current) {
+        recorderRefWhisper.current.stop();
+        recorderRefWhisper.current = null;
+      }
+      if (streamWhisperRef.current) {
+        streamWhisperRef.current.getTracks().forEach((track) => track.stop());
+        streamWhisperRef.current = null;
+      }
+      if (audioContextRefWhisper.current) {
+        audioContextRefWhisper.current.close();
+        audioContextRefWhisper.current = null;
+      }
+      setStream(null);
+      setChunks([]);
+      setRecording(false);
+      return;
+    }
+
+    // Don't recreate if already set up
+    if (recorderRefWhisper.current && streamWhisperRef.current) {
+      setStream(streamWhisperRef.current);
+      return;
+    }
+
+    if (navigator.mediaDevices.getUserMedia) {
+      navigator.mediaDevices
+        .getUserMedia({ audio: true })
+        .then((stream) => {
+          streamWhisperRef.current = stream;
+          setStream(stream); // For visualizer
+
+          recorderRefWhisper.current = new MediaRecorder(stream);
+          audioContextRefWhisper.current = new AudioContext({
+            sampleRate: WHISPER_SAMPLING_RATE,
+          });
+
+          recorderRefWhisper.current.onstart = () => {
+            setRecording(true);
+            setChunks([]);
+          };
+          recorderRefWhisper.current.ondataavailable = (e) => {
+            if (e.data.size > 0) {
+              setChunks((prev) => [...prev, e.data]);
+            } else {
+              // Empty chunk received, so we request new data after a short timeout
+              setTimeout(() => {
+                recorderRefWhisper.current?.requestData();
+              }, 25);
+            }
+          };
+
+          recorderRefWhisper.current.onstop = () => {
+            setRecording(false);
+          };
+
+          recorderRefWhisper.current.onerror = (error) => {
+            console.error('MediaRecorder error:', error);
+            if (window.electron) {
+              ipcRenderer.send('audio-error', error.message);
+            }
+          };
+        })
+        .catch((err) => {
+          console.error("The following error occurred: ", err);
+          if (window.electron) {
+            ipcRenderer.send('audio-error', err.message);
+          }
+        });
+    } else {
+      const error = "getUserMedia not supported on your browser!";
+      console.error(error);
+      if (window.electron) {
+        ipcRenderer.send('audio-error', error);
+      }
+    }
+
+    return () => {
+      if (recorderRefWhisper.current) {
+        recorderRefWhisper.current.stop();
+        recorderRefWhisper.current = null;
+      }
+      if (streamWhisperRef.current) {
+        streamWhisperRef.current.getTracks().forEach((track) => track.stop());
+        streamWhisperRef.current = null;
+      }
+      if (audioContextRefWhisper.current) {
+        audioContextRefWhisper.current.close();
+        audioContextRefWhisper.current = null;
+      }
+    };
+  }, [currentModel]);
+
+  // Process audio chunks for Whisper model
+  useEffect(() => {
+    if (!currentModel || currentModel !== 'whisper') return;
+    if (!recorderRefWhisper.current) return;
+    if (!recording) return;
+    if (isProcessing) return;
+    if (status !== "ready") return;
+
+    if (chunks.length > 0) {
+      // Generate from data
+      const blob = new Blob(chunks, { type: recorderRefWhisper.current.mimeType });
+
+      const fileReader = new FileReader();
+
+      fileReader.onloadend = async () => {
+        const arrayBuffer = fileReader.result;
+        const decoded =
+          await audioContextRefWhisper.current.decodeAudioData(arrayBuffer);
+        let audio = decoded.getChannelData(0);
+        if (audio.length > MAX_SAMPLES) {
+          // Get last MAX_SAMPLES
+          audio = audio.slice(-MAX_SAMPLES);
+        }
+
+        workerWhisper.current.postMessage({
+          type: "generate",
+          data: { audio, language },
+        });
+      };
+      fileReader.readAsArrayBuffer(blob);
+    } else {
+      recorderRefWhisper.current?.requestData();
+    }
+  }, [status, recording, isProcessing, chunks, language, currentModel]);
+
+  // Start recorder when switching to whisper model if ready and listening
+  useEffect(() => {
+    if (!currentModel || currentModel !== 'whisper') return;
+    if (status === 'ready' && isListening && recorderRefWhisper.current) {
+      if (recorderRefWhisper.current.state !== 'recording') {
+        recorderRefWhisper.current.start();
+      }
+    }
+  }, [currentModel, status, isListening]);
 
   // Add toggle function to handle both icon and visualizer clicks
   const toggleVisualizer = () => {
@@ -440,6 +828,11 @@ function App() {
     return () => document.body.classList.remove('modal-open');
   }, [showAbout]);
 
+  // Show model selection screen if no model is selected
+  if (currentModel === null) {
+    return <ModelSelectionScreen onSelectModel={handleModelSelection} />;
+  }
+
   return (
     <div
       className="h-screen rounded-2xl overflow-hidden shadow-2xl"
@@ -448,8 +841,13 @@ function App() {
       {status === "loading" ? (
         <div className="flex flex-col items-center justify-center h-full text-center px-4 w-full">
           <h1 className="text-2xl font-bold mb-2 text-white/90">WhisperO</h1>
-          <p className="text-sm text-gray-400 mb-4">
-            Whisper your thoughts, we'll write them down. <br /> <br />
+          <p className="text-sm text-gray-400 mb-2">
+            Loading {currentModel === 'moonshine' ? '🌙 Moonshine' : '🎤 Whisper'} model...
+          </p>
+          <p className="text-xs text-gray-500 mb-4">
+            {loadingMessage || "Initializing models..."}
+          </p>
+          <p className="text-xs text-gray-500 mb-4">
             <small className="text-white/90"> Offline, private & secure. Precise voice to transcribed text  dictation</small>
           </p>
           {/* Progress indicator for model loading */}
@@ -510,15 +908,16 @@ function App() {
             <div className="h-[2px] w-full bg-gray-700 dark:bg-gray-800 shadow" />
           </div>
 
-          {/* Remove the old floating language selector and icon buttons below the header */}
-          {/* Target Window Indicator */}
-          <div className="hidden flex items-center ml-4 gap-2 app-region-no-drag">
-            <LanguageSelector
-              language={language}
-              setLanguage={setLanguage}
-              className="text-xs"
-            />
-          </div>
+          {/* Language Selector for Whisper */}
+          {currentModel === 'whisper' && (
+            <div className="flex items-center ml-4 gap-2 app-region-no-drag mt-2">
+              <LanguageSelector
+                language={language}
+                setLanguage={setLanguage}
+                className="text-xs"
+              />
+            </div>
+          )}
           {autoPasteEnabled && targetWindow && (
             <div className="absolute top-12 right-4 bg-gray-800/50 backdrop-blur-sm rounded px-2 py-1 text-xs">
               Target: {targetWindow.title || 'No window selected'}
@@ -679,7 +1078,7 @@ function App() {
             <div className="flex flex-col items-center gap-2">
               <img src="whispero-logo.png" alt="Whispero Logo" className="w-12 h-12 mb-2 select-none pointer-events-none" draggable="false" />
               <h2 className="text-lg font-bold mb-1">Whispero</h2>
-              <div className="text-sm mb-2">Version <span className="font-mono">0.9.9</span></div>
+              <div className="text-sm mb-2">Version <span className="font-mono">1.0.0</span></div>
               <button
                 onClick={() => shell.openExternal('https://github.com/dragonjump/whispero-electron')}
                 className="text-indigo-400 hover:underline text-sm focus:outline-none"
