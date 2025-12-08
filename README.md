@@ -23,7 +23,7 @@ Whispero is a modern, privacy-first, open source voice-to-text desktop applicati
 
 ## 🖥️ Installation
 
-1. **Download** the latest release from the [Releases page](./release.md).
+1. **Download** the latest release from the [Releases page](https://github.com/dragonjump/whispero/releases).
 2. **Run the installer** for your platform (Windows, macOS, Linux).
 3. **Launch Whispero**. The app will start in a compact, centered window.
 
